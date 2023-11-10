@@ -23,14 +23,14 @@ def process_video(
     deps["box_annotator"] = box_annotator
     deps["label_annotator"] = label_annotator
     deps["status"] = {}
+    deps["video_info"] = video_info
+    deps["source_video_path"] = source_video_path
+    deps["target_video_path"] = target_video_path
 
+    print("Processing video...")
+    print(f"Video Size: {video_info.width}x{video_info.height}")
     with sv.VideoSink(target_path=target_video_path, video_info=video_info) as sink:
         deps["sink"] = sink
-        deps["status"]["paths"] = {
-            "source_video_path": source_video_path,
-            "target_video_path": target_video_path,
-            "video_info": video_info
-        }
         for index, frame in enumerate(tqdm(frame_generator, total=video_info.total_frames)):
           frame_data = {
             "frame": frame,

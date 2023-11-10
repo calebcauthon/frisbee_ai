@@ -52,30 +52,21 @@ def annotate(frame, detections, deps):
   return annotated_labeled_frame
 
 def draw_field(annotated_frame, deps):
-    # Draw a white rectangle in the upper left corner of the image
-    rectangle_top_left = (0, 0)
-    rectangle_top_right = (200, 0)
-    rectangle_bottom_left = (0, 200)
-    rectangle_bottom_right = (200, 200)
+    # Draw a rectangle on the right side of the video with a height-to-width ratio of 145 to 78
+    video_height = deps["video_info"].height
+    rectangle_width = int(video_height * (78 / 145))
+    rectangle_top_left = (deps["video_info"].width - rectangle_width, 0)
+    rectangle_bottom_right = (deps["video_info"].width, video_height)
 
-    rectangle = sv.Rect(x=rectangle_top_left[0], y=rectangle_top_left[1], width=rectangle_top_right[0] - rectangle_top_left[0], height=rectangle_bottom_left[1] - rectangle_top_left[1])
-    annotated_frame = sv.draw_filled_rectangle(annotated_frame, rectangle, sv.Color.from_hex("#FFFFFF"))
+    # Draw the outer rectangle (white border)
+    outer_rectangle = sv.Rect(x=rectangle_top_left[0], y=rectangle_top_left[1], width=rectangle_bottom_right[0] - rectangle_top_left[0], height=rectangle_bottom_right[1] - rectangle_top_left[1])
+    annotated_frame = sv.draw_filled_rectangle(annotated_frame, outer_rectangle, sv.Color.from_hex("#FFFFFF"))
 
-    # Draw two small black squares in the bottom half of the rectangle that are 50px apart
-    square_width = 10
-    
-    rectangle_height = rectangle_bottom_left[1] - rectangle_top_left[1]
-    square_y = rectangle_bottom_left[1] - int(rectangle_height * 0.1) - square_width
-    middle_x = int((rectangle_bottom_right[0] - rectangle_top_left[0]) / 2)
+    # Draw the inner rectangle (green)
+    border_width = 5  # Width of the border in pixels
+    inner_rectangle_top_left = (rectangle_top_left[0] + border_width, rectangle_top_left[1] + border_width)
+    inner_rectangle_bottom_right = (rectangle_bottom_right[0] - border_width, rectangle_bottom_right[1] - border_width)
+    inner_rectangle = sv.Rect(x=inner_rectangle_top_left[0], y=inner_rectangle_top_left[1], width=inner_rectangle_bottom_right[0] - inner_rectangle_top_left[0], height=inner_rectangle_bottom_right[1] - inner_rectangle_top_left[1])
+    annotated_frame = sv.draw_filled_rectangle(annotated_frame, inner_rectangle, sv.Color.from_hex("#008000"))  # Hex code for green
 
-    square1_top_left = (middle_x - 30, square_y)
-    square1_bottom_right = (square1_top_left[0] + square_width, square1_top_left[1] + square_width)
-    square1 = sv.Rect(x=square1_top_left[0], y=square1_top_left[1], width=square1_bottom_right[0] - square1_top_left[0], height=square1_bottom_right[1] - square1_top_left[1])
-
-    square2_top_left = (middle_x + 30, square_y)
-    square2_bottom_right = (square2_top_left[0] + square_width, square2_top_left[1] + square_width)
-    square2 = sv.Rect(x=square2_top_left[0], y=square2_top_left[1], width=square2_bottom_right[0] - square2_top_left[0], height=square2_bottom_right[1] - square2_top_left[1])
-
-    annotated_frame = sv.draw_filled_rectangle(annotated_frame, square1, sv.Color.from_hex("#000000"))
-    annotated_frame = sv.draw_filled_rectangle(annotated_frame, square2, sv.Color.from_hex("#000000"))
     return annotated_frame
