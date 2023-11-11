@@ -1,5 +1,6 @@
 import supervision as sv
 import numpy as np
+from library.homography import *
 
 def get_name(tracker_id, bbox, current_frame_data):
   return f"ID {tracker_id}"
@@ -140,3 +141,36 @@ def draw_black_rectangle(frame, position, deps):
 
 def draw_red_rectangle(frame, position, deps):
     return draw_rectangle(frame, position, "#FF0000", deps)
+
+def draw_video_homography_points(frame, deps):
+    top_left = deps["homography_points"]["left_clear_cone"]["position_within_image"]
+    top_right = deps["homography_points"]["right_clear_cone"]["position_within_image"]
+    left_bucket = deps["homography_points"]["left_bucket"]["position_within_image"]
+    right_bucket = deps["homography_points"]["right_bucket"]["position_within_image"]
+    
+    frame = draw_red_rectangle(frame, top_left, deps) # top left
+    frame = draw_red_rectangle(frame, top_right, deps) # top right
+    frame = draw_red_rectangle(frame, left_bucket, deps) # left bucket
+    frame = draw_red_rectangle(frame, right_bucket, deps) # right bucket
+
+    return frame
+  
+def draw_video_scoring_line(frame, deps):
+  left_bucket = deps["homography_points"]["left_bucket"]["position_within_image"]
+  right_bucket = deps["homography_points"]["right_bucket"]["position_within_image"]
+  white = "#FFFFFF"  # Hex code for white
+  frame = draw_line(frame, left_bucket, right_bucket, white, deps)
+
+def draw_projection_scoring_line(frame, deps):
+  left_bucket = deps["homography_points"]["left_bucket"]["position_on_field"]
+  right_bucket = deps["homography_points"]["right_bucket"]["position_on_field"]
+  white = "#FFFFFF"  # Hex code for white
+  frame = draw_line_between(frame, left_bucket, right_bucket, white, deps)
+
+def draw_projection_homography_points(frame, deps):
+  known_points = deps["homography_points"]["calibration"]["video_known_points"]
+  # Draw the 4 known points with a yellow rectangle within the green field
+  yellow = "#FFFF00"  # Hex code for yellow
+  for point in known_points:
+      field_point = convert_to_birds_eye(point, deps)
+      frame = draw_rectangle_within_green_field(frame, (field_point[0][0][0], field_point[0][0][1]), yellow, deps)

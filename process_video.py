@@ -54,18 +54,30 @@ def process_video(
           "position_on_field": (52, 109)
        }
     }
+    deps["homography_points"]["calibration"] = {
+       "video_known_points": [
+          deps["homography_points"]["left_clear_cone"]["position_within_image"],
+          deps["homography_points"]["right_clear_cone"]["position_within_image"],
+          deps["homography_points"]["left_bucket"]["position_within_image"],
+          deps["homography_points"]["right_bucket"]["position_within_image"]
+       ],
+       "field_known_points": [
+          deps["homography_points"]["left_clear_cone"]["position_on_field"],
+          deps["homography_points"]["right_clear_cone"]["position_on_field"],
+          deps["homography_points"]["left_bucket"]["position_on_field"],
+          deps["homography_points"]["right_bucket"]["position_on_field"]
+       ]
+    }
     print("Processing video...")
     print(f"Video Size: {video_info.width}x{video_info.height}")
     video_info.width += 1200
-    # Create a blank image with the new dimensions
     blank_image = np.zeros((video_info.height, video_info.width, 3), np.uint8)
 
     with sv.VideoSink(target_path=target_video_path, video_info=video_info) as sink:
         deps["sink"] = sink
         for index, frame in enumerate(tqdm(frame_generator, total=video_info.total_frames)):
             if index > 3:
-                continue
-            # Insert the frame into the blank image
+                pass
             blank_image[:frame.shape[0], :frame.shape[1]] = frame
             frame_data = {
                 "frame": blank_image,
@@ -82,35 +94,23 @@ def process_one_frame(index, frame, deps):
     frame = annotate(frame, detections, deps)
     frame = draw_field(frame, deps)
 
-    top_left = deps["homography_points"]["left_clear_cone"]["position_within_image"]
-    top_right = deps["homography_points"]["right_clear_cone"]["position_within_image"]
-    left_bucket = deps["homography_points"]["left_bucket"]["position_within_image"]
-    right_bucket = deps["homography_points"]["right_bucket"]["position_within_image"]
-    known_points = [top_left, top_right, right_bucket, left_bucket]
-    frame = draw_red_rectangle(frame, top_left, deps) # top left
-    frame = draw_red_rectangle(frame, top_right, deps) # top right
-    frame = draw_red_rectangle(frame, left_bucket, deps) # left bucket
-    frame = draw_red_rectangle(frame, right_bucket, deps) # right bucket
+    draw_video_homography_points(frame, deps)
+    draw_projection_homography_points(frame, deps)
     
-    # Draw the 4 known points with a yellow rectangle within the green field
-    yellow = "#FFFF00"  # Hex code for yellow
-    for point in known_points:
-        field_point = convert_to_birds_eye(known_points, point)
-        frame = draw_rectangle_within_green_field(frame, (field_point[0][0][0], field_point[0][0][1]), yellow, deps)
+    draw_video_scoring_line(frame, deps)
+    draw_projection_scoring_line(frame, deps)
     
-    white = "#FFFFFF"  # Hex code for white
-    frame = draw_line(frame, left_bucket, right_bucket, white, deps)
-    frame = draw_line_between(frame,deps["yardage_points"]["bottom_left"], deps["yardage_points"]["bottom_right"], white, deps)
-
     for bbox in detections.xyxy:
-        top_left = (int(bbox[0]), int(bbox[1]))
-        bottom_right = (int(bbox[2]), int(bbox[3]))
-
-        new_image_point = (int((bbox[0] + bbox[2]) / 2), int(bbox[3]))
-        new_field_point = convert_to_birds_eye(known_points, new_image_point)
-        frame = draw_black_rectangle_within_green_field(frame, (new_field_point[0][0][0], new_field_point[0][0][1]), deps)
+        frame = draw_player_projection(bbox, frame, deps)
 
     sink.write_frame(frame=frame)
+
+def draw_player_projection(bbox, frame, deps):
+  new_image_point = (int((bbox[0] + bbox[2]) / 2), int(bbox[3]))
+  new_field_point = convert_to_birds_eye(new_image_point, deps)
+  frame = draw_black_rectangle_within_green_field(frame, (new_field_point[0][0][0], new_field_point[0][0][1]), deps)
+  return frame
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

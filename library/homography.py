@@ -2,8 +2,10 @@ import cv2
 import numpy as np
 
 
-def convert_to_birds_eye(field_in_image, new_image_point):
-  field_real_scale = [(0,30), (78, 30), (52, 109), (30, 109)]
+def convert_to_birds_eye(new_image_point, deps):
+  field_in_image = deps["homography_points"]["calibration"]["video_known_points"]
+  field_real_scale = deps["homography_points"]["calibration"]["field_known_points"]
+  #field_real_scale = [(0,30), (78, 30), (52, 109), (30, 109)]
   # Coordinates in the image (pixel values)
   x_values = [x for x, y in field_in_image]
   y_values = [y for x, y in field_in_image]
