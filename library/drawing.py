@@ -111,7 +111,6 @@ def draw_line_between(frame, yardage_point_1, yardage_point_2, color, deps):
 def draw_line(frame, pixel_position_1, pixel_position_2, color, deps):
     start_point = sv.Point(x=pixel_position_1[0], y=pixel_position_1[1])
     end_point = sv.Point(x=pixel_position_2[0], y=pixel_position_2[1])
-    print(f"Drawing line from {start_point} to {end_point}")
     frame = sv.draw_line(frame, start_point, end_point, sv.Color.from_hex(color), thickness=2)
 
     return frame

@@ -36,6 +36,24 @@ def process_video(
       "bottom_right": (52, 109)
     }
 
+    deps["homography_points"] = {
+       "left_clear_cone": {
+          "position_within_image": (422, 153),
+          "position_on_field": (0, 30)
+       },
+       "right_clear_cone": {
+          "position_within_image": (1176, 123),
+          "position_on_field": (78, 30)
+       },
+       "left_bucket": {
+          "position_within_image": (693, 581),
+          "position_on_field": (30, 109)
+       },
+       "right_bucket": {
+          "position_within_image": (1181, 567),
+          "position_on_field": (52, 109)
+       }
+    }
     print("Processing video...")
     print(f"Video Size: {video_info.width}x{video_info.height}")
     video_info.width += 1200
@@ -64,12 +82,10 @@ def process_one_frame(index, frame, deps):
     frame = annotate(frame, detections, deps)
     frame = draw_field(frame, deps)
 
-    # Draw black rectangles at specified points
-
-    top_left = (422, 153)
-    top_right = (1176, 123)
-    left_bucket = (693, 581)
-    right_bucket = (1181, 567)
+    top_left = deps["homography_points"]["left_clear_cone"]["position_within_image"]
+    top_right = deps["homography_points"]["right_clear_cone"]["position_within_image"]
+    left_bucket = deps["homography_points"]["left_bucket"]["position_within_image"]
+    right_bucket = deps["homography_points"]["right_bucket"]["position_within_image"]
     known_points = [top_left, top_right, right_bucket, left_bucket]
     frame = draw_red_rectangle(frame, top_left, deps) # top left
     frame = draw_red_rectangle(frame, top_right, deps) # top right
