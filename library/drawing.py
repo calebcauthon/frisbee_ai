@@ -1,9 +1,31 @@
 import supervision as sv
 import numpy as np
 from library.homography import *
+import json
+import random
+
+with open('videos/womens_goalty/ids.json', 'r') as f:
+    tracker_names = json.load(f)
+
+def invent_name(bbox, current_frame_data):
+    girls_names = ["Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn"]
+    return random.choice(girls_names)
 
 def get_name(tracker_id, bbox, current_frame_data):
-  return f"ID {tracker_id}"
+  for name, ids in tracker_names.items():
+    if tracker_id in ids:
+      print(f"used tracker_id={tracker_id} for name={name}")
+      return name
+  else:
+     name = invent_name(bbox, current_frame_data)
+     if name in tracker_names:
+         tracker_names[name].append(int(tracker_id))
+     else:
+         tracker_names[name] = [int(tracker_id)]
+
+     # Update the ids.json file
+     with open('videos/womens_goalty/ids.json', 'w') as f:
+         json.dump(tracker_names, f)
 
 def get_labels(detections, deps):
     labels = [
@@ -13,7 +35,7 @@ def get_labels(detections, deps):
     ]
 
     # Blacklist of names
-    blacklist_names = ["opp", "ref", "bys", "bucket"]
+    blacklist_names = ["opp", "ref", "bys"]
 
     filtered_labels = []
     filtered_xyxy = []
@@ -30,7 +52,7 @@ def get_labels(detections, deps):
             filtered_labels.append(label)
             filtered_xyxy.append(detections.xyxy[i])
             filtered_class_ids.append(detections.class_id[i])
-            #filtered_tracker_ids.append(detections.tracker_id[i])
+            filtered_tracker_ids.append(detections.tracker_id[i])
             filtered_confidences.append(detections.confidence[i])
 
     detections.xyxy = filtered_xyxy

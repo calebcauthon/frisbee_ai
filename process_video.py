@@ -8,20 +8,25 @@ from library.homography import *
 import supervision as sv
 
 def initialize_video_processing(source_video_path: str):
+  tracker = sv.ByteTrack(track_thresh= 0.25,
+      track_buffer = 90,
+      match_thresh = 0.6,
+      frame_rate = 30,)
   box_annotator = sv.BoxAnnotator()
   label_annotator = sv.LabelAnnotator()
   frame_generator = sv.get_video_frames_generator(source_path=source_video_path)
   video_info = sv.VideoInfo.from_video_path(video_path=source_video_path)
 
-  return box_annotator, label_annotator, frame_generator, video_info
+  return tracker, box_annotator, label_annotator, frame_generator, video_info
 
 def process_video(
     source_video_path: str,
     target_video_path: str,
 ) -> None:
-    box_annotator, label_annotator, frame_generator, video_info = initialize_video_processing(source_video_path)
-    _, _l, _f, video_info2 = initialize_video_processing(source_video_path)
+    tracker, box_annotator, label_annotator, frame_generator, video_info = initialize_video_processing(source_video_path)
+    _t, _, _l, _f, video_info2 = initialize_video_processing(source_video_path)
     deps = {}
+    deps["tracker"] = tracker
     deps["box_annotator"] = box_annotator
     deps["label_annotator"] = label_annotator
     deps["status"] = {}
@@ -77,7 +82,7 @@ def process_video(
         deps["sink"] = sink
         for index, frame in enumerate(tqdm(frame_generator, total=video_info.total_frames)):
             if index > 3:
-                pass
+                continue
             blank_image[:frame.shape[0], :frame.shape[1]] = frame
             frame_data = {
                 "frame": blank_image,
@@ -89,19 +94,28 @@ def process_video(
             
 def process_one_frame(index, frame, deps):
     sink = deps["sink"]
+    tracker = deps["tracker"]
 
     detections = sv.Detections.from_roboflow(predict_frame(frame, deps))
+    detections = tracker.update_with_detections(detections)
+    print(f"original detections: {detections}")
+
     frame = annotate(frame, detections, deps)
+
+    print(f"new detectionsD: {detections}")
     frame = draw_field(frame, deps)
 
+    print(f"new detectionsH: {detections}")
     draw_video_homography_points(frame, deps)
     draw_projection_homography_points(frame, deps)
     
+    print(f"new detectionsR: {detections}")
     draw_video_scoring_line(frame, deps)
     draw_projection_scoring_line(frame, deps)
     
-    for bbox in detections.xyxy:
-        frame = draw_player_projection(bbox, frame, deps)
+    print(f"new detectionsZ: {detections}")
+    for bbox, _, confidence, class_id, tracker_id in detections:
+      frame = draw_player_projection(bbox, frame, deps)
 
     sink.write_frame(frame=frame)
 
