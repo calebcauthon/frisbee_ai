@@ -81,8 +81,8 @@ def process_video(
     with sv.VideoSink(target_path=target_video_path, video_info=video_info) as sink:
         deps["sink"] = sink
         for index, frame in enumerate(tqdm(frame_generator, total=video_info.total_frames)):
-            if index > 3:
-                continue
+#            if index > 3:
+#                continue
             blank_image[:frame.shape[0], :frame.shape[1]] = frame
             frame_data = {
                 "frame": blank_image,
@@ -98,22 +98,17 @@ def process_one_frame(index, frame, deps):
 
     detections = sv.Detections.from_roboflow(predict_frame(frame, deps))
     detections = tracker.update_with_detections(detections)
-    print(f"original detections: {detections}")
 
     frame = annotate(frame, detections, deps)
 
-    print(f"new detectionsD: {detections}")
     frame = draw_field(frame, deps)
 
-    print(f"new detectionsH: {detections}")
     draw_video_homography_points(frame, deps)
     draw_projection_homography_points(frame, deps)
     
-    print(f"new detectionsR: {detections}")
     draw_video_scoring_line(frame, deps)
     draw_projection_scoring_line(frame, deps)
     
-    print(f"new detectionsZ: {detections}")
     for bbox, _, confidence, class_id, tracker_id in detections:
       frame = draw_player_projection(bbox, frame, deps)
 

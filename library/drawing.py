@@ -14,7 +14,6 @@ def invent_name(bbox, current_frame_data):
 def get_name(tracker_id, bbox, current_frame_data):
   for name, ids in tracker_names.items():
     if tracker_id in ids:
-      print(f"used tracker_id={tracker_id} for name={name}")
       return name
   else:
      name = invent_name(bbox, current_frame_data)
@@ -92,16 +91,15 @@ def draw_field(annotated_frame, deps):
 
     # Draw the outer rectangle (white border)
     outer_rectangle = sv.Rect(x=rectangle_top_left[0], y=rectangle_top_left[1], width=rectangle_bottom_right[0] - rectangle_top_left[0], height=rectangle_bottom_right[1] - rectangle_top_left[1])
-    annotated_frame = sv.draw_filled_rectangle(annotated_frame, outer_rectangle, sv.Color.from_hex("#FFFFFF"))
+    sv.draw_filled_rectangle(annotated_frame, outer_rectangle, sv.Color.from_hex("#FFFFFF"))
 
     # Draw the inner rectangle (green)
     border_width = 5  # Width of the border in pixels
     inner_rectangle_top_left = (rectangle_top_left[0] + border_width, rectangle_top_left[1] + border_width)
     inner_rectangle_bottom_right = (rectangle_bottom_right[0] - border_width, rectangle_bottom_right[1] - border_width)
     inner_rectangle = sv.Rect(x=inner_rectangle_top_left[0], y=inner_rectangle_top_left[1], width=inner_rectangle_bottom_right[0] - inner_rectangle_top_left[0], height=inner_rectangle_bottom_right[1] - inner_rectangle_top_left[1])
-    annotated_frame = sv.draw_filled_rectangle(annotated_frame, inner_rectangle, sv.Color.from_hex("#008000"))  # Hex code for green
+    sv.draw_filled_rectangle(annotated_frame, inner_rectangle, sv.Color.from_hex("#008000"))  # Hex code for green
 
-    return annotated_frame
 def convert_from_yardage_position_on_field_to_pixel_position_on_green_rectangle(position, deps):
     # Scale the position to fit the green field dimensions
     green_field_width = deps["green_field_coordinates"]["width"]
@@ -124,45 +122,35 @@ def convert_from_yardage_position_on_field_to_pixel_position_on_green_rectangle(
     return offset_position
 
 def draw_line_between(frame, yardage_point_1, yardage_point_2, color, deps):
-    # Convert the yardage position on the field to pixel position on the green rectangle
     pixel_position_1 = convert_from_yardage_position_on_field_to_pixel_position_on_green_rectangle(yardage_point_1, deps)
     pixel_position_2 = convert_from_yardage_position_on_field_to_pixel_position_on_green_rectangle(yardage_point_2, deps)
 
-    # Draw the line between the two points
-    return draw_line(frame, pixel_position_1, pixel_position_2, color, deps)
+    draw_line(frame, pixel_position_1, pixel_position_2, color, deps)
 
 def draw_line(frame, pixel_position_1, pixel_position_2, color, deps):
     start_point = sv.Point(x=pixel_position_1[0], y=pixel_position_1[1])
     end_point = sv.Point(x=pixel_position_2[0], y=pixel_position_2[1])
-    frame = sv.draw_line(frame, start_point, end_point, sv.Color.from_hex(color), thickness=2)
-
-    return frame
-
+    sv.draw_line(frame, start_point, end_point, sv.Color.from_hex(color), thickness=2)
 
 def draw_rectangle_within_green_field(frame, yardage_position, color, deps):
-    # Convert the yardage position on the field to pixel position on the green rectangle
     pixel_position = convert_from_yardage_position_on_field_to_pixel_position_on_green_rectangle(yardage_position, deps)
-
-    # Draw the black rectangle at the pixel position
-    return draw_rectangle(frame, pixel_position, color, deps)
+    draw_rectangle(frame, pixel_position, color, deps)
 
 def draw_black_rectangle_within_green_field(frame, yardage_position, deps):
     black = "#000000"
-    return draw_rectangle_within_green_field(frame, yardage_position, black, deps)
+    draw_rectangle_within_green_field(frame, yardage_position, black, deps)
 
 def draw_rectangle(frame, position, color, deps):
     width = 10
     height = 10
     rectangle = sv.Rect(x=position[0], y=position[1], width=width, height=10)  # Arbitrary width and height
-    frame = sv.draw_filled_rectangle(frame, rectangle, sv.Color.from_hex(color))  # Hex code for color
-
-    return frame
+    sv.draw_filled_rectangle(frame, rectangle, sv.Color.from_hex(color))  # Hex code for color
 
 def draw_black_rectangle(frame, position, deps):
-    return draw_rectangle(frame, position, "#000000", deps)
+    draw_rectangle(frame, position, "#000000", deps)
 
 def draw_red_rectangle(frame, position, deps):
-    return draw_rectangle(frame, position, "#FF0000", deps)
+    draw_rectangle(frame, position, "#FF0000", deps)
 
 def draw_video_homography_points(frame, deps):
     top_left = deps["homography_points"]["left_clear_cone"]["position_within_image"]
@@ -170,24 +158,22 @@ def draw_video_homography_points(frame, deps):
     left_bucket = deps["homography_points"]["left_bucket"]["position_within_image"]
     right_bucket = deps["homography_points"]["right_bucket"]["position_within_image"]
     
-    frame = draw_red_rectangle(frame, top_left, deps) # top left
-    frame = draw_red_rectangle(frame, top_right, deps) # top right
-    frame = draw_red_rectangle(frame, left_bucket, deps) # left bucket
-    frame = draw_red_rectangle(frame, right_bucket, deps) # right bucket
-
-    return frame
+    draw_red_rectangle(frame, top_left, deps) # top left
+    draw_red_rectangle(frame, top_right, deps) # top right
+    draw_red_rectangle(frame, left_bucket, deps) # left bucket
+    draw_red_rectangle(frame, right_bucket, deps) # right bucket
   
 def draw_video_scoring_line(frame, deps):
   left_bucket = deps["homography_points"]["left_bucket"]["position_within_image"]
   right_bucket = deps["homography_points"]["right_bucket"]["position_within_image"]
   white = "#FFFFFF"  # Hex code for white
-  frame = draw_line(frame, left_bucket, right_bucket, white, deps)
+  draw_line(frame, left_bucket, right_bucket, white, deps)
 
 def draw_projection_scoring_line(frame, deps):
   left_bucket = deps["homography_points"]["left_bucket"]["position_on_field"]
   right_bucket = deps["homography_points"]["right_bucket"]["position_on_field"]
   white = "#FFFFFF"  # Hex code for white
-  frame = draw_line_between(frame, left_bucket, right_bucket, white, deps)
+  draw_line_between(frame, left_bucket, right_bucket, white, deps)
 
 def draw_projection_homography_points(frame, deps):
   known_points = deps["homography_points"]["calibration"]["video_known_points"]
@@ -195,4 +181,4 @@ def draw_projection_homography_points(frame, deps):
   yellow = "#FFFF00"  # Hex code for yellow
   for point in known_points:
       field_point = convert_to_birds_eye(point, deps)
-      frame = draw_rectangle_within_green_field(frame, (field_point[0][0][0], field_point[0][0][1]), yellow, deps)
+      draw_rectangle_within_green_field(frame, (field_point[0][0][0], field_point[0][0][1]), yellow, deps)
