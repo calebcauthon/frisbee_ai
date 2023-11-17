@@ -93,8 +93,7 @@ def process_video(
         deps["sink"] = sink
         for index, frame in enumerate(tqdm(frame_generator, total=video_info.total_frames)):
             logReplace(deps, "PROGRESS", "PROGRESS: " + tqdm.format_meter(index, video_info.total_frames, 0, 0))
-            if index > 3:
-                pass
+            
             blank_image[:frame.shape[0], :frame.shape[1]] = frame
             frame_data = {
                 "frame": blank_image,
