@@ -12,11 +12,9 @@ def get_tracker_data(deps):
     return deps["tracker_names"]
 
 
-def draw_player_projection(bbox, frame, deps):
-  new_image_point = (int((bbox[0] + bbox[2]) / 2), int(bbox[3]))
-  new_field_point = convert_to_birds_eye(new_image_point, deps)
-  frame = draw_black_rectangle_within_green_field(frame, (new_field_point[0][0][0], new_field_point[0][0][1]), deps)
-  return frame
+def draw_player_projection(projection, frame, deps):
+    frame = draw_black_rectangle_within_green_field(frame, (projection[0][0][0], projection[0][0][1]), deps)
+    return frame
 
 def invent_name():
     girls_names = ["Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn"]

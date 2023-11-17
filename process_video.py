@@ -122,10 +122,16 @@ def process_one_frame(index, frame, deps):
     draw_projection_scoring_line(frame, deps)
     
     for bbox, _, confidence, class_id, tracker_id in detections:
-      draw_player_projection(bbox, frame, deps)
+      projection = get_player_projection(bbox, frame, deps)
+      draw_player_projection(projection, frame, deps)
 
     sink.write_frame(frame=frame)
 
+
+def get_player_projection(bbox, frame, deps):
+    new_image_point = (int((bbox[0] + bbox[2]) / 2), int(bbox[3]))
+    new_field_point = convert_to_birds_eye(new_image_point, deps)
+    return new_field_point
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
