@@ -3,6 +3,7 @@ from tqdm import tqdm
 from library.detection import predict_frame
 from library.drawing import *
 from library.homography import *
+from library import homography
 from library.logging import *
 import os
 import supervision as sv
@@ -38,31 +39,9 @@ def process_video(
     deps["source_video_info"] = video_info2
     deps["source_video_path"] = source_video_path
     deps["target_video_path"] = target_video_path
-    deps["yardage_points"] = {
-      "top_left": (0, 30),
-      "top_right": (78, 30),
-      "bottom_left": (30, 109),
-      "bottom_right": (52, 109)
-    }
+    deps["yardage_points"] = homography.get_yardage_points()
+    deps["homography_points"] = homography.get_homography_points()
 
-    deps["homography_points"] = {
-       "left_clear_cone": {
-          "position_within_image": (422, 153),
-          "position_on_field": (0, 30)
-       },
-       "right_clear_cone": {
-          "position_within_image": (1176, 123),
-          "position_on_field": (78, 30)
-       },
-       "left_bucket": {
-          "position_within_image": (693, 581),
-          "position_on_field": (30, 109)
-       },
-       "right_bucket": {
-          "position_within_image": (1181, 567),
-          "position_on_field": (52, 109)
-       }
-    }
     deps["homography_points"]["calibration"] = {
        "video_known_points": [
           deps["homography_points"]["left_clear_cone"]["position_within_image"],

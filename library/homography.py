@@ -1,6 +1,34 @@
 import cv2
 import numpy as np
 
+def get_yardage_points():
+    return {
+        "top_left": (0, 30),
+        "top_right": (78, 30),
+        "bottom_left": (30, 109),
+        "bottom_right": (52, 109)
+    }
+
+def get_homography_points():
+    yardage_points = get_yardage_points()
+    return {
+        "left_clear_cone": {
+            "position_within_image": (422, 153),
+            "position_on_field": yardage_points["top_left"]
+        },
+        "right_clear_cone": {
+            "position_within_image": (1176, 123),
+            "position_on_field": yardage_points["top_right"]
+        },
+        "left_bucket": {
+            "position_within_image": (693, 581),
+            "position_on_field": yardage_points["bottom_left"]
+        },
+        "right_bucket": {
+            "position_within_image": (1181, 567),
+            "position_on_field": yardage_points["bottom_right"]
+        }
+    }
 
 def convert_to_birds_eye(new_image_point, deps):
   field_in_image = deps["homography_points"]["calibration"]["video_known_points"]
