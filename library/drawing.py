@@ -4,8 +4,13 @@ from library.homography import *
 import json
 import random
 
-with open('videos/womens_goalty/ids.json', 'r') as f:
-    tracker_names = json.load(f)
+try:
+    with open('../videos/womens_goalty/ids.json', 'r') as f:
+        tracker_names = json.load(f)
+except FileNotFoundError:
+    with open('../videos/womens_goalty/ids.json', 'w') as f:
+        f.write('{}')
+    tracker_names = {}
 
 def invent_name(bbox, current_frame_data):
     girls_names = ["Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn"]
@@ -23,7 +28,7 @@ def get_name(tracker_id, bbox, current_frame_data):
          tracker_names[name] = [int(tracker_id)]
 
      # Update the ids.json file
-     with open('videos/womens_goalty/ids.json', 'w') as f:
+     with open('../videos/womens_goalty/ids.json', 'w') as f:
          json.dump(tracker_names, f)
 
 def get_labels(detections, deps):

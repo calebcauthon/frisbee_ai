@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Annotator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Additional styles if needed */
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="flex flex-col md:flex-row h-screen">
+        <!-- Video List Container -->
+        <div class="md:w-1/3 bg-white p-4 overflow-auto">
+            <h2 class="text-lg font-semibold mb-4">List of Video Files</h2>
+            <ul id="videoList" class="space-y-2">
+                <!-- Video list items will be populated here -->
+            </ul>
+        </div>
+
+        <!-- Video Player Container -->
+        <div class="md:w-2/3 p-4 flex flex-col">
+            <div class="flex-grow">
+                <video id="videoPlayer" class="w-full h-full" controls></video>
+            </div>
+            <button id="annotateBtn" class="bg-green-500 text-white px-4 py-2 mt-4 self-start hover:bg-green-600 transition-colors">Annotate</button>
+            <div class="mt-4">
+                <h2 class="text-lg font-semibold mb-4">LOGS</h2>
+                <pre id="logs" class="bg-gray-200 p-4 overflow-auto">
+                    <!-- Logs will be populated here -->
+                </pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript to handle video loading and annotation
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoList = document.getElementById('videoList');
+            const videoPlayer = document.getElementById('videoPlayer');
+            const annotateBtn = document.getElementById('annotateBtn');
+
+            // Fetch video list from backend server
+            fetch('/api/videos')
+                .then(response => response.json())
+                .then(data => data.videos)
+                .then(videos => {
+                    videos.forEach(video => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${video.filename}`;
+                        listItem.classList.add('cursor-pointer', 'hover:text-blue-500');
+                        listItem.onclick = () => loadVideo('static/' + video.full_path.split('static')[1]);
+                        videoList.appendChild(listItem);
+                    });
+                });
+
+            // Load video into the video player
+            function loadVideo(path) {
+                videoPlayer.src = path;
+                videoPlayer.load();
+            }
+
+            // Send video path to the backend server for annotation
+            annotateBtn.addEventListener('click', () => {
+                const videoPath = videoPlayer.src;
+                fetch('/api/annotate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ path: videoPath }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Annotation success:', data);
+                    // Start calling /api/tail after annotation
+                    let intervalId = setInterval(() => {
+                        fetch('/tail')
+                            .then(response => response.text())
+                            .then(data => {
+                                document.querySelector('#logs').innerText = `${data}`;
+                                if (data.includes("COMPLETED")) {
+                                    clearInterval(intervalId);
+                                }
+                            })
+                            .catch((error) => {
+                                console.error('Error:', error);
+                            });
+                    }, 2000);
+                })
+                .catch((error) => {
+                    console.error('Annotation error:', error);
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

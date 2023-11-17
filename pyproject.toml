@@ -13,6 +13,10 @@ pillow = "^10.1.0"
 supervision = "^0.16.0"
 opencv-python = "^4.8.1.78"
 ultralytics = "^8.0.202"
+ipykernel = "^6.26.0"
+notebook = "^7.0.6"
+ipython = "^8.17.2"
+flask = "^3.0.0"
 
 
 [build-system]
