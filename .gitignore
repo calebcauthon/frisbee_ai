@@ -1,4 +1,5 @@
 videos/
 *.pyc
 *.mp4
-output.txt
+*/web_ui/output.txt
+*/*.jpg

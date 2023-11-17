@@ -70,7 +70,6 @@
                 fetch('/api/annotations/' + video.filename.replace('.mp4', ''))
                     .then(response => response.text())
                     .then(data => {
-                        console.log('Annotation table success:', data);
                         const detectionsTable = document.getElementById('detections-table');
                         detectionsTable.innerHTML = data;
                         changeFrame(0);
@@ -130,6 +129,85 @@
                     frames[i].style.display = "none";
                 }
             }
+        }
+
+        function changeTrackerName(old_name, new_name, video_path) {
+            var data = {
+                "old_name": old_name,
+                "new_name": new_name,
+                "video_path": video_path
+            };
+            if (old_name == new_name) {
+                return;
+            }
+            fetch('/api/change_tracker_name', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Tracker name change success:', data);
+            })
+            .catch((error) => {
+                console.error('Tracker name change error:', error);
+            });
+        }
+
+        function moveTrackerIdToNewName(old_tracker_id, new_name, video_path) {
+            console.log("moveTrackerIdToNewName", {
+                old_tracker_id,
+                new_name,
+                video_path
+            });
+
+            var data = {
+                "old_tracker_id": old_tracker_id,
+                "new_name": new_name,
+                "video_path": video_path
+            };
+            fetch('/api/move_tracker_id_to_new_name', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Tracker name change success:', data);
+            })
+            .catch((error) => {
+                console.error('Tracker name change error:', error);
+            });
+        }
+
+        function addTrackerName(new_name, video_path) {
+            console.log("addTrackerName", {
+                new_name,
+                video_path
+            });
+
+            var data = {
+                "new_name": new_name,
+                "video_path": video_path
+            };
+            fetch('/api/add_tracker_name', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Add tracker name success:', data);
+            })
+            .catch((error) => {
+                console.error('Add tracker name error:', error);
+            });
         }
     </script>
 

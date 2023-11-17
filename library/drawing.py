@@ -1,16 +1,15 @@
 import supervision as sv
 import numpy as np
 from library.homography import *
+from library import logging
 import json
 import random
 
-try:
-    with open('../videos/womens_goalty/ids.json', 'r') as f:
-        tracker_names = json.load(f)
-except FileNotFoundError:
-    with open('../videos/womens_goalty/ids.json', 'w') as f:
-        f.write('{}')
-    tracker_names = {}
+def get_tracker_data(deps):
+    if "tracker_names" not in deps:
+        data = logging.read_detection_data_from_file(deps["target_video_path"])
+        deps["tracker_names"] = data["tracker_names"]
+    return deps["tracker_names"]
 
 
 def draw_player_projection(bbox, frame, deps):
@@ -19,28 +18,25 @@ def draw_player_projection(bbox, frame, deps):
   frame = draw_black_rectangle_within_green_field(frame, (new_field_point[0][0][0], new_field_point[0][0][1]), deps)
   return frame
 
-def invent_name(bbox, current_frame_data):
+def invent_name():
     girls_names = ["Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn"]
     return random.choice(girls_names)
 
-def get_name(tracker_id, bbox, current_frame_data):
+def get_name(deps, tracker_id):
+  tracker_names = get_tracker_data(deps)
   for name, ids in tracker_names.items():
     if tracker_id in ids:
       return name
   else:
-     name = invent_name(bbox, current_frame_data)
+     name = invent_name()
      if name in tracker_names:
          tracker_names[name].append(int(tracker_id))
      else:
          tracker_names[name] = [int(tracker_id)]
 
-     # Update the ids.json file
-     with open('../videos/womens_goalty/ids.json', 'w') as f:
-         json.dump(tracker_names, f)
-
 def get_labels(detections, deps):
     labels = [
-        f"{get_name(tracker_id, bbox, deps['status']['current_frame'])}"
+        f"{get_name(deps, tracker_id)}"
         for bbox, _, confidence, class_id, tracker_id
         in detections
     ]

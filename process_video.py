@@ -57,7 +57,6 @@ def process_video(
     with sv.VideoSink(target_path=target_video_path, video_info=video_info, codec=[*"VP90"]) as sink:
         deps["sink"] = sink
         for index, frame in enumerate(tqdm(frame_generator, total=video_info.total_frames)):
-            print(f"INDEX: {index}")
             logReplace(deps, "PROGRESS", "PROGRESS: " + tqdm.format_meter(index, video_info.total_frames, 0, 0))
             
             blank_image[:frame.shape[0], :frame.shape[1]] = frame
@@ -74,16 +73,10 @@ def process_video(
     log(deps, "Wrote detection data to file")
     log(deps, "COMPLETED")
     
-    
-
-            
 def save_detections(frame, frame_number, detections, inference, deps):
     if "detections" not in deps:
         deps["detections"] = []
 
-
-    print(f"inf:\n\n{inference}\n\n")
-    print(f"detections:\n\n{detections}\n\n")
     objects = []
     for index, entry in enumerate(detections.xyxy):
         prediction = inference["predictions"][index]
@@ -91,7 +84,8 @@ def save_detections(frame, frame_number, detections, inference, deps):
             "confidence": detections.confidence[index],
             "class_id": detections.class_id[index],
             "tracker_id": detections.tracker_id[index],
-            "xyxy": detections.xyxy[index],
+            "tracker_name": get_name(deps, detections.tracker_id[index]),
+            "xyxy": detections.xyxy[index].tolist(),
             "class": prediction["class"],
             "center": [int(prediction["x"]), int(prediction["y"])],
             "width": int(prediction["width"]),

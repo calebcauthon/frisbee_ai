@@ -1,11 +1,39 @@
 from flask import Flask, render_template, request
 import os
-from json_tricks import loads
+from json_tricks import loads, dumps
+from library import logging
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='web_ui/static', template_folder='web_ui/templates')
 
 from flask import send_file
 import subprocess
+
+@app.route('/api/add_tracker_name', methods=['POST'])
+def add_tracker_name():
+    data = request.get_json()
+    new_name = data['new_name']
+    video_path = data['video_path']
+    logging.add_tracker_name(new_name, video_path)
+    return dumps({'status': 'success'})
+
+
+@app.route('/api/change_tracker_name', methods=['POST'])
+def change_tracker_name():
+    data = request.get_json()
+    old_name = data['old_name']
+    new_name = data['new_name'] 
+    video_path = data['video_path']
+    logging.change_tracker_name(old_name, new_name, video_path)
+    return dumps({'status': 'success'})
+
+@app.route('/api/move_tracker_id_to_new_name', methods=['POST'])
+def change_tracker_id():
+    data = request.get_json()
+    old_tracker_id = int(data['old_tracker_id'])
+    new_name = data['new_name']
+    video_path = data['video_path']
+    logging.move_tracking_id_to_another_name(old_tracker_id, new_name, video_path)
+    return dumps({'status': 'success'})
 
 # Example route: 
 # http://localhost:5000/womens_goalty_10.mp4?xy_upper_left=0,0&xy_bottom_right=100,100&frame_number=1
@@ -39,7 +67,7 @@ def crop_image(filename):
     random_filename = str(uuid.uuid4()) + '.png'
 
     # Construct the ffmpeg command
-    command = f"ffmpeg -i static/video_sources/{filename} -vf \"select='eq(n,{frame_number})',crop={width}:{height}:{x1}:{y1},drawbox={drawbox_x}:{drawbox_y}:{drawbox_width}:{drawbox_height}:yellow\" -vframes 1 {random_filename}"
+    command = f"ffmpeg -i web_ui/static/video_sources/{filename} -vf \"select='eq(n,{frame_number})',crop={width}:{height}:{x1}:{y1},drawbox={drawbox_x}:{drawbox_y}:{drawbox_width}:{drawbox_height}:yellow\" -vframes 1 {random_filename}"
 
     # Execute the command
     subprocess.run(command, shell=True)
@@ -52,23 +80,20 @@ def crop_image(filename):
 
     return response
 
-
 @app.route('/api/annotations/<filename>', methods=['GET'])
 def get_annotations(filename):
-    annotation_file = os.path.join('static', 'annotation_data', f'{filename}_annotation_data.json')
+    annotation_file = os.path.join('web_ui', 'static', 'annotation_data', f'{filename}_annotation_data.json')
     if not os.path.exists(annotation_file):
         return ""
     with open(annotation_file, 'r') as f:
         annotation_data = loads(f.read())
     return render_template('annotation_data.html', data=annotation_data)
 
-
 @app.route('/tail')
 def tail():
-    with open('output.txt', 'r') as f:
+    with open('web_ui/output.txt', 'r') as f:
         content = f.read()
     return content
-
 
 @app.route('/home')
 def home():
@@ -77,8 +102,8 @@ def home():
 @app.route('/api/videos/')
 def get_videos():
     video_dirs = {
-        "source": os.path.join(os.path.dirname(__file__), 'static', 'video_sources'),
-        "target": os.path.join(os.path.dirname(__file__), 'static', 'video_targets')
+        "source": os.path.join(os.path.dirname(__file__), 'web_ui', 'static', 'video_sources'),
+        "target": os.path.join(os.path.dirname(__file__), 'web_ui', 'static', 'video_targets')
     }
     video_data = {}
 
@@ -103,8 +128,8 @@ def annotate_video():
     source_filename = os.path.splitext(source_filename)[0]
     print(f"source_filename: {source_filename} from source_video_path: {source_video_path}")
 
-    target_video_path = f'static/video_targets/{source_filename}_annotated.mp4'
-    command = f"poetry shell && python ../process_video.py --source_video_path static/{source_video_path} --target_video_path {target_video_path}"
+    target_video_path = f'web_ui/static/video_targets/{source_filename}_annotated.mp4'
+    command = f"poetry shell && python process_video.py --source_video_path web_ui/static/{source_video_path} --target_video_path {target_video_path}"
     print(f"Running command: {command}")
     import subprocess
     subprocess.Popen(command, shell=True)

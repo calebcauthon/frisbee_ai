@@ -1,8 +1,8 @@
-File created at: Thu Nov 16 23:06:44 2023
+File created at: Fri Nov 17 13:01:41 2023
 Processing video...
 Video Size: 1920x1080
-Output Path: static/video_targets/womens_goalty_2_annotated.mp4
-Deleted existing file at static/video_targets/womens_goalty_2_annotated.mp4
+Output Path: web_ui/static/video_targets/womens_goalty_2_annotated.mp4
+Deleted existing file at web_ui/static/video_targets/womens_goalty_2_annotated.mp4
 PROGRESS: 100% 37/37 [00:00<?, ?it/s]
 Wrote detection data to file
 COMPLETED
