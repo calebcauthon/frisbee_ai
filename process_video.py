@@ -41,21 +41,7 @@ def process_video(
     deps["target_video_path"] = target_video_path
     deps["yardage_points"] = homography.get_yardage_points()
     deps["homography_points"] = homography.get_homography_points()
-
-    deps["homography_points"]["calibration"] = {
-       "video_known_points": [
-          deps["homography_points"]["left_clear_cone"]["position_within_image"],
-          deps["homography_points"]["right_clear_cone"]["position_within_image"],
-          deps["homography_points"]["left_bucket"]["position_within_image"],
-          deps["homography_points"]["right_bucket"]["position_within_image"]
-       ],
-       "field_known_points": [
-          deps["homography_points"]["left_clear_cone"]["position_on_field"],
-          deps["homography_points"]["right_clear_cone"]["position_on_field"],
-          deps["homography_points"]["left_bucket"]["position_on_field"],
-          deps["homography_points"]["right_bucket"]["position_on_field"]
-       ]
-    }
+    deps["homography_points"]["calibration"] = homography.get_calibration_points(deps)
 
     clearLogs()
     log(deps, "Processing video...")

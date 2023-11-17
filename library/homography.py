@@ -9,6 +9,23 @@ def get_yardage_points():
         "bottom_right": (52, 109)
     }
 
+def get_calibration_points(deps):
+    points = get_homography_points()
+    return {
+        "video_known_points": [
+          points["left_clear_cone"]["position_within_image"],
+          points["right_clear_cone"]["position_within_image"],
+          points["left_bucket"]["position_within_image"],
+          points["right_bucket"]["position_within_image"]
+       ],
+       "field_known_points": [
+          points["left_clear_cone"]["position_on_field"],
+          points["right_clear_cone"]["position_on_field"],
+          points["left_bucket"]["position_on_field"],
+          points["right_bucket"]["position_on_field"]
+       ]
+    }
+
 def get_homography_points():
     yardage_points = get_yardage_points()
     return {
@@ -27,7 +44,7 @@ def get_homography_points():
         "right_bucket": {
             "position_within_image": (1181, 567),
             "position_on_field": yardage_points["bottom_right"]
-        }
+        },
     }
 
 def convert_to_birds_eye(new_image_point, deps):
