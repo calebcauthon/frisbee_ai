@@ -1,10 +1,9 @@
-import time
 import argparse
 from tqdm import tqdm
-import cv2
 from library.detection import predict_frame
 from library.drawing import *
 from library.homography import *
+from library.logging import *
 import os
 import supervision as sv
 
@@ -19,39 +18,6 @@ def initialize_video_processing(source_video_path: str):
   video_info = sv.VideoInfo.from_video_path(video_path=source_video_path)
 
   return tracker, box_annotator, label_annotator, frame_generator, video_info
-
-def clearLogs():
-    with open('output.txt', 'w') as f:
-        f.write(f"File created at: {time.ctime(os.path.getctime('output.txt'))}\n")
-
-def log(message):
-    global deps
-    deps["logs"].append(message)
-    print(f"LOG: {message}")
-    append_to_output_file(message)
-
-def logReplace(starting_word, new_message):
-    global deps
-    for i, entry in enumerate(deps["logs"]):
-        if entry.startswith(starting_word):
-            deps["logs"][i] = new_message
-            rewriteLogs(deps["logs"])
-            break
-    else:  # This else clause will execute if the for loop completes without a break
-        log(new_message)
-    
-
-def rewriteLogs(logs):
-    clearLogs()
-    for log in logs:
-        append_to_output_file(log)
-
-def append_to_output_file(message):
-    if not os.path.exists('output.txt'):
-        with open('output.txt', 'w') as f:
-            pass
-    with open('output.txt', 'a') as f:
-        f.write(message + '\n')
 
 deps = {}
 
@@ -113,11 +79,11 @@ def process_video(
     }
 
     clearLogs()
-    log("Processing video...")
-    log(f"Video Size: {video_info.width}x{video_info.height}")
-    log(f"Output Path: {target_video_path}")
+    log(deps, "Processing video...")
+    log(deps, f"Video Size: {video_info.width}x{video_info.height}")
+    log(deps, f"Output Path: {target_video_path}")
     if os.path.exists(target_video_path):
-        log(f"Deleted existing file at {target_video_path}")
+        log(deps, f"Deleted existing file at {target_video_path}")
         os.remove(target_video_path)
     
     video_info.width += 1200
@@ -126,7 +92,7 @@ def process_video(
     with sv.VideoSink(target_path=target_video_path, video_info=video_info, codec=[*"VP90"]) as sink:
         deps["sink"] = sink
         for index, frame in enumerate(tqdm(frame_generator, total=video_info.total_frames)):
-            logReplace("PROGRESS", "PROGRESS: " + tqdm.format_meter(index, video_info.total_frames, 0, 0))
+            logReplace(deps, "PROGRESS", "PROGRESS: " + tqdm.format_meter(index, video_info.total_frames, 0, 0))
             if index > 3:
                 pass
             blank_image[:frame.shape[0], :frame.shape[1]] = frame
@@ -138,8 +104,8 @@ def process_video(
             deps["status"]["current_frame"] = frame_data
             process_one_frame(index, blank_image, deps)
 
-    logReplace("PROGRESS", "PROGRESS: " + tqdm.format_meter(video_info.total_frames, video_info.total_frames, 0, 0))
-    log("COMPLETED")
+    logReplace(deps, "PROGRESS", "PROGRESS: " + tqdm.format_meter(video_info.total_frames, video_info.total_frames, 0, 0))
+    log(deps, "COMPLETED")
             
 def process_one_frame(index, frame, deps):
     sink = deps["sink"]
