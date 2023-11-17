@@ -73,7 +73,7 @@ def process_video(
     log(deps, "Wrote detection data to file")
     log(deps, "COMPLETED")
     
-def save_detections(frame, frame_number, detections, inference, deps):
+def save_detections(frame, frame_number, detections, projection, inference, deps):
     if "detections" not in deps:
         deps["detections"] = []
 
@@ -81,6 +81,7 @@ def save_detections(frame, frame_number, detections, inference, deps):
     for index, entry in enumerate(detections.xyxy):
         prediction = inference["predictions"][index]
         objects.append({
+            "field_position": projection,
             "confidence": detections.confidence[index],
             "class_id": detections.class_id[index],
             "tracker_id": detections.tracker_id[index],
@@ -109,8 +110,7 @@ def process_one_frame(index, frame, deps):
 
     roboflow_result = predict_frame(frame, deps)
     detections = sv.Detections.from_roboflow(roboflow_result)
-    detections = tracker.update_with_detections(detections)
-    save_detections(frame, index, detections, roboflow_result, deps)
+    detections = tracker.update_with_detections(detections) 
 
     frame = annotate(frame, detections, deps)
     draw_field(frame, deps)
@@ -122,16 +122,18 @@ def process_one_frame(index, frame, deps):
     draw_projection_scoring_line(frame, deps)
     
     for bbox, _, confidence, class_id, tracker_id in detections:
-      projection = get_player_projection(bbox, frame, deps)
+      projection = get_player_projection(bbox, deps)
       draw_player_projection(projection, frame, deps)
 
+    save_detections(frame, index, detections, projection, roboflow_result, deps)
     sink.write_frame(frame=frame)
 
 
-def get_player_projection(bbox, frame, deps):
+def get_player_projection(bbox, deps):
     new_image_point = (int((bbox[0] + bbox[2]) / 2), int(bbox[3]))
     new_field_point = convert_to_birds_eye(new_image_point, deps)
-    return new_field_point
+    xy = (new_field_point[0][0][0], new_field_point[0][0][1])
+    return xy
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

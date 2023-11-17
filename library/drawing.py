@@ -13,7 +13,7 @@ def get_tracker_data(deps):
 
 
 def draw_player_projection(projection, frame, deps):
-    frame = draw_black_rectangle_within_green_field(frame, (projection[0][0][0], projection[0][0][1]), deps)
+    frame = draw_black_rectangle_within_green_field(frame, (projection[0], projection[1]), deps)
     return frame
 
 def invent_name():
