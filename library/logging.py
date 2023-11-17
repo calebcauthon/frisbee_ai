@@ -1,5 +1,24 @@
 import time
 import os
+import json
+from json_tricks import dumps
+
+def write_detection_data_to_file(deps, detections):
+    objects = [{
+      "objects": detection['objects'],
+      "frame_number": detection['frame_number']
+    } for detection in detections]
+    
+    annotation_data = {
+      "frames": objects,
+      "video_path": deps["target_video_path"],
+      "source_path": deps["source_video_path"],
+      "source_filename": os.path.basename(deps["source_video_path"]),
+    }
+
+    filename = os.path.splitext(os.path.basename(deps["target_video_path"]))[0]
+    with open(f'static/annotation_data/{filename}_annotation_data.json', 'w') as f:
+        f.write(dumps(annotation_data))
 
 def clearLogs():
     with open('output.txt', 'w') as f:

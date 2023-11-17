@@ -26,6 +26,11 @@
                 <video id="videoPlayer" class="w-full h-full" controls></video>
             </div>
             <button id="annotateBtn" class="bg-green-500 text-white px-4 py-2 mt-4 self-start hover:bg-green-600 transition-colors">Annotate</button>
+
+            <!-- Detected Objects Container -->
+            <div class="mt-4" id="detections-table">
+            </div>
+
             <div class="mt-4">
                 <h2 class="text-lg font-semibold mb-4">LOGS</h2>
                 <pre id="logs" class="bg-gray-200 p-4 overflow-auto">
@@ -33,6 +38,8 @@
                 </pre>
             </div>
         </div>
+
+
     </div>
 
     <script>
@@ -51,10 +58,27 @@
                         const listItem = document.createElement('li');
                         listItem.textContent = `${video.filename}`;
                         listItem.classList.add('cursor-pointer', 'hover:text-blue-500');
-                        listItem.onclick = () => loadVideo('static/' + video.full_path.split('static')[1]);
+                        listItem.onclick = () => {
+                            loadAnnotationTable(video);
+                            loadVideo('static/' + video.full_path.split('static')[1])
+                        };
                         videoList.appendChild(listItem);
                     });
                 });
+
+            function loadAnnotationTable(video) {
+                fetch('/api/annotations/' + video.filename.replace('.mp4', ''))
+                    .then(response => response.text())
+                    .then(data => {
+                        console.log('Annotation table success:', data);
+                        const detectionsTable = document.getElementById('detections-table');
+                        detectionsTable.innerHTML = data;
+                        changeFrame(0);
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+            }
 
             // Load video into the video player
             function loadVideo(path) {
@@ -95,6 +119,18 @@
                 });
             });
         });
+
+        function changeFrame(frameNumber) {
+            frameNumber ||= document.getElementById("frameSelect").value;
+            var frames = document.getElementsByClassName("frame-table");
+            for (var i = 0; i < frames.length; i++) {
+                if (frames[i].id == "frame" + frameNumber) {
+                    frames[i].style.display = "block";
+                } else {
+                    frames[i].style.display = "none";
+                }
+            }
+        }
     </script>
 
 </body>

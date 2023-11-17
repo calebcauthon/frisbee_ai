@@ -1,7 +1,67 @@
 from flask import Flask, render_template, request
 import os
+from json_tricks import loads
 
 app = Flask(__name__)
+
+from flask import send_file
+import subprocess
+
+# Example route: 
+# http://localhost:5000/womens_goalty_10.mp4?xy_upper_left=0,0&xy_bottom_right=100,100&frame_number=1
+@app.route('/frame/<filename>', methods=['GET'])
+def crop_image(filename):
+    xy_upper_left = request.args.get('xy_upper_left')
+    xy_bottom_right = request.args.get('xy_bottom_right')
+    frame_number = request.args.get('frame_number')
+
+    x1, y1 = map(int, xy_upper_left.split(','))
+    x2, y2 = map(int, xy_bottom_right.split(','))
+
+    # Add 20 pixel buffer to the coordinates
+    x1 -= 20
+    y1 -= 20
+    x2 += 20
+    y2 += 20
+
+    # Calculate the width and height of the crop
+    width = x2 - x1
+    height = y2 - y1
+
+    # Calculate the coordinates for the drawbox
+    drawbox_x = 20
+    drawbox_y = 20
+    drawbox_width = width - 40
+    drawbox_height = height - 40
+
+    # Generate a random filename
+    import uuid
+    random_filename = str(uuid.uuid4()) + '.png'
+
+    # Construct the ffmpeg command
+    command = f"ffmpeg -i static/video_sources/{filename} -vf \"select='eq(n,{frame_number})',crop={width}:{height}:{x1}:{y1},drawbox={drawbox_x}:{drawbox_y}:{drawbox_width}:{drawbox_height}:yellow\" -vframes 1 {random_filename}"
+
+    # Execute the command
+    subprocess.run(command, shell=True)
+
+    # Send the file
+    response = send_file(random_filename, mimetype='image/png')
+
+    # Delete the file
+    os.remove(random_filename)
+
+    return response
+
+
+@app.route('/api/annotations/<filename>', methods=['GET'])
+def get_annotations(filename):
+    annotation_file = os.path.join('static', 'annotation_data', f'{filename}_annotation_data.json')
+    if not os.path.exists(annotation_file):
+        return ""
+    with open(annotation_file, 'r') as f:
+        annotation_data = loads(f.read())
+    return render_template('annotation_data.html', data=annotation_data)
+
 
 @app.route('/tail')
 def tail():

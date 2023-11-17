@@ -57,6 +57,7 @@ def process_video(
     with sv.VideoSink(target_path=target_video_path, video_info=video_info, codec=[*"VP90"]) as sink:
         deps["sink"] = sink
         for index, frame in enumerate(tqdm(frame_generator, total=video_info.total_frames)):
+            print(f"INDEX: {index}")
             logReplace(deps, "PROGRESS", "PROGRESS: " + tqdm.format_meter(index, video_info.total_frames, 0, 0))
             
             blank_image[:frame.shape[0], :frame.shape[1]] = frame
@@ -69,14 +70,53 @@ def process_video(
             process_one_frame(index, blank_image, deps)
 
     logReplace(deps, "PROGRESS", "PROGRESS: " + tqdm.format_meter(video_info.total_frames, video_info.total_frames, 0, 0))
+    write_detection_data_to_file(deps, deps["detections"])
+    log(deps, "Wrote detection data to file")
     log(deps, "COMPLETED")
+    
+    
+
+            
+def save_detections(frame, frame_number, detections, inference, deps):
+    if "detections" not in deps:
+        deps["detections"] = []
+
+
+    print(f"inf:\n\n{inference}\n\n")
+    print(f"detections:\n\n{detections}\n\n")
+    objects = []
+    for index, entry in enumerate(detections.xyxy):
+        prediction = inference["predictions"][index]
+        objects.append({
+            "confidence": detections.confidence[index],
+            "class_id": detections.class_id[index],
+            "tracker_id": detections.tracker_id[index],
+            "xyxy": detections.xyxy[index],
+            "class": prediction["class"],
+            "center": [int(prediction["x"]), int(prediction["y"])],
+            "width": int(prediction["width"]),
+            "height": int(prediction["height"]),
+        })
+
+
+    detection_map = {
+        "frame": frame,
+        "frame_number": frame_number,
+        "detections": detections,
+        "objects": objects
+    }
+    deps["detections"].append(detection_map)
             
 def process_one_frame(index, frame, deps):
+    if index > 3:
+        return
     sink = deps["sink"]
     tracker = deps["tracker"]
 
-    detections = sv.Detections.from_roboflow(predict_frame(frame, deps))
+    roboflow_result = predict_frame(frame, deps)
+    detections = sv.Detections.from_roboflow(roboflow_result)
     detections = tracker.update_with_detections(detections)
+    save_detections(frame, index, detections, roboflow_result, deps)
 
     frame = annotate(frame, detections, deps)
     draw_field(frame, deps)
