@@ -1,3 +1,15 @@
+def remove_tracker_name(name, tracker_names, frames):
+    ids = tracker_names.get(name, [])
+    for frame in frames:
+        for obj in frame["objects"]:
+            if obj["tracker_id"] in ids:
+                print(f"Tracker still used, not removing. Tracker ID {obj['tracker_id']} used in frame {frame['frame_number']} for tracker name {name}")
+                return tracker_names
+
+    if name in tracker_names:
+        del tracker_names[name]
+    return tracker_names
+
 def add_tracker_name(new_name, tracker_names):
     if new_name not in tracker_names:
         tracker_names[new_name] = []
@@ -151,6 +163,43 @@ def test_change_tracking_id_on_all_frames():
         }
     ]
 
+def test_remove_tracker_removes_name():
+    tracker_map = {
+        "Ava22": [],
+        "Dizzle3": [57, 60]
+    }
+    result = remove_tracker_name("Ava22", tracker_map, [])
+    assert result == {
+        "Dizzle3": [57, 60]
+    }
+
+    print("\033[92mtest_remove_tracker_removes_name() passed\033[0m")
+
+def test_dont_remove_if_tracker_still_used():
+    tracker_map = {
+        "Ava22": [6],
+        "Dizzle3": [57, 60]
+    }
+    frames = [
+        {
+            "frame_number": 1,
+            "objects": [
+                {
+                    "tracker_id": 6
+                }
+            ]
+        }
+    ]
+    result = remove_tracker_name("Ava22", tracker_map, frames)
+    assert result == {
+        "Ava22": [6],
+        "Dizzle3": [57, 60]
+    }
+
+    print("\033[92mtest_dont_remove_if_tracker_still_used() passed\033[0m")
+
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "test":
@@ -158,3 +207,5 @@ if __name__ == "__main__":
         test_move_tracking_id_to_new_name()
         test_change_tracking_id_on_all_frames()
         test_change_name()
+        test_remove_tracker_removes_name()
+        test_dont_remove_if_tracker_still_used()

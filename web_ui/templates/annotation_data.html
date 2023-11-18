@@ -106,6 +106,9 @@
         {% for name, ids in data.tracker_names.items() %}
           <tr>
               <td>
+                <button onclick="removePlayer('{{ name }}')">Remove</button>
+              </td>
+              <td>
                 <input id="tracker_name_{{ name }}" type="text" value="{{ name }}" onchange='changeTrackerName("{{ name }}", this.value, "{{ data.video_path }}")'>
               </td>
               <td>

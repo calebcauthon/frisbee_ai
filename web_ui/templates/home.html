@@ -88,6 +88,28 @@
             lastTrackerName = tracker_name;
         }
 
+
+        function removePlayer(name) {
+            console.log("removePlayer", name);
+            var data = {
+                "name": name,
+                "video_path": lastVideo.filename
+            };
+            fetch('/api/remove_player', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Remove player success:', data);
+            })
+            .catch((error) => {
+                console.error('Remove player error:', error);
+            });
+        }
         // JavaScript to handle video loading and annotation
         document.addEventListener('DOMContentLoaded', function() {
             const videoList = document.getElementById('videoList');
@@ -110,8 +132,6 @@
                         videoList.appendChild(listItem);
                     });
                 });
-
-
 
             // Load video into the video player
             function loadVideo(path) {
