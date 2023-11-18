@@ -4,6 +4,46 @@ from library.homography import *
 from library import logging
 import json
 import random
+import subprocess
+import uuid
+import os
+
+def crop_image_util(filename, xy_upper_left, xy_bottom_right, frame_number, output_filename=None):
+    x1, y1 = map(int, xy_upper_left.split(','))
+    x2, y2 = map(int, xy_bottom_right.split(','))
+
+    # Add 20 pixel buffer to the coordinates
+    x1 -= 20
+    y1 -= 20
+    x2 += 20
+    y2 += 20
+
+    # Calculate the width and height of the crop
+    width = x2 - x1
+    height = y2 - y1
+
+    # Calculate the coordinates for the drawbox
+    drawbox_x = 20
+    drawbox_y = 20
+    drawbox_width = width - 40
+    drawbox_height = height - 40
+
+    # Generate a random filename
+    random_filename = output_filename or str(uuid.uuid4()) + '.png'
+
+    # Construct the ffmpeg command
+    if filename in os.listdir('web_ui/static/video_sources'):
+        file_path = f"web_ui/static/video_sources/{filename}"
+    elif filename in os.listdir('web_ui/static/video_targets'):
+        file_path = f"web_ui/static/video_targets/{filename}"
+    else:
+        raise FileNotFoundError(f"The file {filename} was not found in video_sources or video_targets.")
+    command = f"ffmpeg -y -i {file_path} -vf \"select='eq(n,{frame_number})',crop={width}:{height}:{x1}:{y1},drawbox={drawbox_x}:{drawbox_y}:{drawbox_width}:{drawbox_height}:yellow\" -vframes 1 tmp/{random_filename}"
+
+    print(f"Running {command}")
+    subprocess.run(command, shell=True)
+
+    return f"tmp/{random_filename}"
 
 def get_tracker_data(deps):
     if "tracker_names" not in deps:

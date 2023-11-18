@@ -1,12 +1,44 @@
+import uuid
 from flask import Flask, render_template, request
 import os
 from json_tricks import loads, dumps
-from library import logging
+from library import logging, stats, drawing
+from web_ui.routes.gif import gif_route
+from types import SimpleNamespace
 
 app = Flask(__name__, static_folder='web_ui/static', template_folder='web_ui/templates')
 
 from flask import send_file
 import subprocess
+from library import stats
+import flask
+
+@app.route('/player_movies/<filename>_<player>.gif', methods=['GET'])
+def get_player_movie(filename, player):
+
+    module_dependencies = SimpleNamespace(
+        os=os,
+        subprocess=subprocess,
+        flask=flask,
+        drawing=drawing,
+        logging=logging,
+        stats=stats
+    )
+    return gif_route(module_dependencies, filename, player)
+    
+@app.route('/stats/<filename>.mp4', methods=['GET'])
+def get_stats(filename):
+    annotation_data = get_annotation_data(filename)
+    print(f"annotation_data: {annotation_data.keys()}")
+    game_data = stats.get_stats(annotation_data)
+    return render_template('stats.html', game_data=game_data)
+
+@app.route('/player_stats/<filename>.mp4', methods=['GET'])
+def get_player_stats(filename):
+    player = request.args.get('player')
+    annotation_data = get_annotation_data(filename)
+    player_frames = stats.get_frames_with_distance_travelled(player, stats.exclude_other_players(player, stats.get_player_frames(player, annotation_data)))
+    return render_template('player_stats.html', frames=player_frames, player=player)
 
 @app.route('/api/add_tracker_name', methods=['POST'])
 def add_tracker_name():
@@ -15,7 +47,6 @@ def add_tracker_name():
     video_path = data['video_path']
     logging.add_tracker_name(new_name, video_path)
     return dumps({'status': 'success'})
-
 
 @app.route('/api/change_tracker_name', methods=['POST'])
 def change_tracker_name():
@@ -35,14 +66,7 @@ def change_tracker_id():
     logging.move_tracking_id_to_another_name(old_tracker_id, new_name, video_path)
     return dumps({'status': 'success'})
 
-# Example route: 
-# http://localhost:5000/womens_goalty_10.mp4?xy_upper_left=0,0&xy_bottom_right=100,100&frame_number=1
-@app.route('/frame/<filename>', methods=['GET'])
-def crop_image(filename):
-    xy_upper_left = request.args.get('xy_upper_left')
-    xy_bottom_right = request.args.get('xy_bottom_right')
-    frame_number = request.args.get('frame_number')
-
+def crop_image_util(filename, xy_upper_left, xy_bottom_right, frame_number, output_filename=None):
     x1, y1 = map(int, xy_upper_left.split(','))
     x2, y2 = map(int, xy_bottom_right.split(','))
 
@@ -63,31 +87,68 @@ def crop_image(filename):
     drawbox_height = height - 40
 
     # Generate a random filename
-    import uuid
-    random_filename = str(uuid.uuid4()) + '.png'
+    random_filename = output_filename or str(uuid.uuid4()) + '.png'
 
     # Construct the ffmpeg command
-    command = f"ffmpeg -i web_ui/static/video_sources/{filename} -vf \"select='eq(n,{frame_number})',crop={width}:{height}:{x1}:{y1},drawbox={drawbox_x}:{drawbox_y}:{drawbox_width}:{drawbox_height}:yellow\" -vframes 1 {random_filename}"
+    if filename in os.listdir('web_ui/static/video_sources'):
+        file_path = f"web_ui/static/video_sources/{filename}"
+    elif filename in os.listdir('web_ui/static/video_targets'):
+        file_path = f"web_ui/static/video_targets/{filename}"
+    else:
+        raise FileNotFoundError(f"The file {filename} was not found in video_sources or video_targets.")
+    command = f"ffmpeg -i {file_path} -vf \"select='eq(n,{frame_number})',crop={width}:{height}:{x1}:{y1},drawbox={drawbox_x}:{drawbox_y}:{drawbox_width}:{drawbox_height}:yellow\" -vframes 1 tmp/{random_filename}"
 
     # Execute the command
     subprocess.run(command, shell=True)
 
-    # Send the file
-    response = send_file(random_filename, mimetype='image/png')
+    return f"tmp/{random_filename}"
 
-    # Delete the file
-    os.remove(random_filename)
+# Example route: 
+# http://localhost:5000/womens_goalty_10.mp4?xy_upper_left=0,0&xy_bottom_right=100,100&frame_number=1
+@app.route('/frame/<filename>', methods=['GET'])
+def crop_image(filename):
+    xy_upper_left = request.args.get('xy_upper_left')
+    xy_bottom_right = request.args.get('xy_bottom_right')
+    frame_number = request.args.get('frame_number')
+
+    photo_filename = crop_image_util(filename, xy_upper_left, xy_bottom_right, frame_number)
+    response = send_file(photo_filename, mimetype='image/png')
+    os.remove(photo_filename)
 
     return response
 
+# Example URL
+# http://localhost:5000/api/annotations/womens_goalty_10.mp4?skip=100&start=1&total_objects=100
 @app.route('/api/annotations/<filename>', methods=['GET'])
 def get_annotations(filename):
-    annotation_file = os.path.join('web_ui', 'static', 'annotation_data', f'{filename}_annotation_data.json')
-    if not os.path.exists(annotation_file):
+    annotation_data = get_annotation_data(filename)
+    if (annotation_data == {}):
         return ""
-    with open(annotation_file, 'r') as f:
-        annotation_data = loads(f.read())
-    return render_template('annotation_data.html', data=annotation_data)
+
+    skip = request.args.get('skip', default=100, type=int)
+    start = request.args.get('start', default=1, type=int)
+    total_objects = request.args.get('total_objects', default=100, type=int)
+    tracker_name = request.args.get('tracker_name', default=None, type=str)
+
+    if (tracker_name == 'all' or tracker_name == 'null'):
+        tracker_name = None
+
+    filtered_frames = []
+    object_count = 0
+    indexes = range(start, len(annotation_data['frames']), skip)
+    for i in indexes:
+        frame = annotation_data['frames'][i]
+        if tracker_name:
+            frame['objects'] = [obj for obj in frame['objects'] if obj['tracker_name'] == tracker_name]
+        object_count += len(frame['objects'])
+        if object_count > total_objects:
+            print(f"break because object_count: {object_count} > total_objects: {total_objects}")
+            break
+        
+        if len(frame['objects']) > 0:
+            filtered_frames.append(frame)
+    annotation_data['frames'] = filtered_frames
+    return render_template('annotation_data.html', data=annotation_data, query_params=request.args)
 
 @app.route('/tail')
 def tail():
@@ -109,7 +170,11 @@ def get_videos():
 
     for video_type, video_dir in video_dirs.items():
         video_files = [f for f in os.listdir(video_dir) if f.endswith('.mp4')]
-        video_data[f"{video_type}_video_data"] = [{"full_path": os.path.join(video_dir, f), "filename": f} for f in video_files]
+        video_data[f"{video_type}_video_data"] = [{
+            "full_path": os.path.join(video_dir, f),
+            "filename": f,
+            "total_frames": stats.get_total_frames(os.path.join(video_dir, f))
+        } for f in video_files]
 
     source_video_data = video_data["source_video_data"]
     target_video_data = video_data["target_video_data"]

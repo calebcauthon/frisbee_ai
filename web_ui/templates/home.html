@@ -43,6 +43,51 @@
     </div>
 
     <script>
+
+        var lastVideo = null;
+        var lastTrackerName = null
+        function loadAnnotationTable(video, {skip = 100, start = 1, total_objects = 100, tracker_name = 'all'} = {}) {
+            if (!video) {
+                video = lastVideo;
+            }            
+
+            if (!tracker_name && lastTrackerName) {
+                tracker_name = lastTrackerName;
+            }
+
+            fetch(`/api/annotations/${video.filename.replace('.mp4', '')}?skip=${skip}&start=${start}&total_objects=${total_objects}&tracker_name=${tracker_name}`)
+                .then(response => response.text())
+                .then(data => {
+                    const detectionsTable = document.getElementById('detections-table');
+                    detectionsTable.innerHTML = data;
+                    document.getElementById('refresh_annotation').onclick = () => {
+                        loadAnnotationTable(video);
+                    };
+
+                    document.getElementById('load_new_frames').onclick = () => {
+                        const skipInput = document.getElementById('skip');
+                        const startInput = document.getElementById('start');
+                        const totalObjectsInput = document.getElementById('total_objects');
+                        const skip = skipInput.value ? skipInput.value : Math.floor(Math.random() * 101);
+                        const start = startInput.value ? startInput.value : Math.floor(Math.random() * (video.total_frames));
+                        const total_objects = totalObjectsInput.value ? totalObjectsInput.value : 100;
+                        loadAnnotationTable(video, {skip: skip, start: start, total_objects: total_objects, tracker_name: tracker_name});
+                    };
+
+                    document.getElementById('load_all_frames').onclick = () => {
+                        const skip = 1
+                        const start = 0
+                        const total_objects = 250
+                        loadAnnotationTable(video, {skip: skip, start: start, total_objects: total_objects, tracker_name: tracker_name});
+                    };
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            lastVideo = video;
+            lastTrackerName = tracker_name;
+        }
+
         // JavaScript to handle video loading and annotation
         document.addEventListener('DOMContentLoaded', function() {
             const videoList = document.getElementById('videoList');
@@ -66,18 +111,7 @@
                     });
                 });
 
-            function loadAnnotationTable(video) {
-                fetch('/api/annotations/' + video.filename.replace('.mp4', ''))
-                    .then(response => response.text())
-                    .then(data => {
-                        const detectionsTable = document.getElementById('detections-table');
-                        detectionsTable.innerHTML = data;
-                        changeFrame(0);
-                    })
-                    .catch((error) => {
-                        console.error('Error:', error);
-                    });
-            }
+
 
             // Load video into the video player
             function loadVideo(path) {
@@ -118,18 +152,6 @@
                 });
             });
         });
-
-        function changeFrame(frameNumber) {
-            frameNumber ||= document.getElementById("frameSelect").value;
-            var frames = document.getElementsByClassName("frame-table");
-            for (var i = 0; i < frames.length; i++) {
-                if (frames[i].id == "frame" + frameNumber) {
-                    frames[i].style.display = "block";
-                } else {
-                    frames[i].style.display = "none";
-                }
-            }
-        }
 
         function changeTrackerName(old_name, new_name, video_path) {
             var data = {

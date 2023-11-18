@@ -1,8 +1,18 @@
 import time
 import os
 import json
-from json_tricks import dumps
+from json_tricks import dumps, loads
 from library import tracker
+
+def get_annotation_data(filename):
+    annotation_file = os.path.join('web_ui', 'static', 'annotation_data', f'{filename}_annotation_data.json')
+    if not os.path.exists(annotation_file):
+        print(f"Annotation file {annotation_file} does not exist")
+        return {}
+    with open(annotation_file, 'r') as f:
+        obj = loads(f.read())
+
+    return obj
 
 def add_tracker_name(new_name, video_path):
     annotation_data = read_detection_data_from_file(video_path)

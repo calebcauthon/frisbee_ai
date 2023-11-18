@@ -1,4 +1,5 @@
 <style>
+  a { color: #0035ff; }
   button { color: #fff; background-color: #4a5568; border-radius: 0.25rem; padding: 0.5rem 1rem; }
   .frame-number { font-size: 5rem; }
   table {
@@ -92,18 +93,30 @@
   
   }
 </style>
+{% set video_short_path = data.video_path.split('/')[-1][:-4] %}
 <div>
   <h2 class="text-lg font-semibold mb-4">Names</h2>
   <table id="trackerNamesTable">
       <thead>
           <tr>
-              <th>Tracker Name</th>
+              <th>Players</th>
           </tr>
       </thead>
       <tbody>
         {% for name, ids in data.tracker_names.items() %}
           <tr>
-              <td><input id="tracker_name_{{ name }}" type="text" value="{{ name }}" onchange='changeTrackerName("{{ name }}", this.value, "{{ data.video_path }}")'></td>
+              <td>
+                <input id="tracker_name_{{ name }}" type="text" value="{{ name }}" onchange='changeTrackerName("{{ name }}", this.value, "{{ data.video_path }}")'>
+              </td>
+              <td>
+                <button onclick='loadAnnotationTable(null, { skip: 10, tracker_name: "{{ name }}" });'>Show Frames</button>
+              </td>
+              <td>
+                <a href="/player_stats/{{ video_short_path }}.mp4?player={{ name }}"><button>Frame Details</button></a>
+              </td>
+              <td>
+                <button onclick='var img = document.createElement("img"); img.src = "/player_movies/{{ data.video_path.split('/')[-1][:-4] }}_{{ name }}.gif"; img.width = "100"; this.parentNode.appendChild(img);'>Show GIF</button>
+              </td>
           </tr>
         {% endfor %}
           <tr>
@@ -114,51 +127,38 @@
   </table>
 
   <h2 class="text-lg font-semibold mb-4">Frame Summary</h2>
-  <table id="objectsTable">
-      <thead>
-          <tr>
-              <th>Frame Number</th>
-              <th>Object Count</th>
-          </tr>
-      </thead>
-      <tbody>
-          {% for frame in data.frames %}
-          <tr>
-              <td>{{ frame.frame_number }}</td>
-              <td>{{ frame.objects|length }}</td>
-          </tr>
-          {% endfor %}
-      </tbody>
-  </table>
-  <select id="frameSelect" onchange="changeFrame()">
-      {% for frame in data.frames %}
-      <option value="{{ frame.frame_number }}">Frame #{{ frame.frame_number }}</option>
-      {% endfor %}
-  </select>
-  {% for entry in data.frames %}
-  <div id="frame{{ entry.frame_number }}" style="display: none;" class="frame-table">
-      <table>
-          <thead>
-          </thead>
-          <tbody>
-              {% for frame in data.frames %}
-              <tr>
-                  <td class="frame-number">{{ frame.frame_number }}</td>
-                  {% for object in frame.objects %}
-                  <td>
-                      <select id="frame_{{frame.frame_number}}_tracker_id_{{ object.tracker_id }}" onchange='moveTrackerIdToNewName("{{ object.tracker_id }}", this.value, "{{ data.video_path }}")'>
-                          {% for name in data.tracker_names|sort %}
-                              <option value="{{ name }}" {% if name == object.tracker_name %} selected {% endif %}>{{ name }}</option>
-                          {% endfor %}
-                      </select>
-                      <img src="{{ url_for('crop_image', filename=data.source_filename, xy_upper_left=object.xyxy[0]|int|string+","+object.xyxy[1]|int|string, xy_bottom_right=object.xyxy[2]|int|string+","+object.xyxy[3]|int|string, frame_number=frame.frame_number) }}" alt="Cropped Image">
-                  </td>
-                  {% endfor %}
-              </tr>
-              {% endfor %}
-          </tbody>
-      </table>
-  </div>
-  {% endfor %}
+  <button id="refresh_annotation">Refresh</button>
+  <button id="load_new_frames">Selected Frames</button>
+  <button id="load_all_frames">All Frames</button>
+  <br />
+  <label>Total Objects: <input id="total_objects" type="number" value="{{ query_params.total_objects }}"></label><br />
+  <label>Skip: <input id="skip" type="number" value="{{ query_params.skip }}"></label><br />
+  <label>Start: <input id="start" type="number" value="{{ query_params.start }}"></label><br />
+  <div class="frame-number"></div>
+    <table>
+        <thead>
+        </thead>
+        <tbody>
+            {% for frame in data.frames %}
+            <tr>
+                <td class="frame-number">{{ frame.frame_number }}</td>
+                {% for object in frame.objects %}
+                <td>
+                    <select id="frame_{{frame.frame_number}}_tracker_id_{{ object.tracker_id }}" onchange='moveTrackerIdToNewName("{{ object.tracker_id }}", this.value, "{{ data.video_path }}")'>
+                        {% for name in data.tracker_names|sort %}
+                            {% if name == object.tracker_name %}
+                                <option value="{{ name }}" selected>{{ name }} #{{ object.tracker_id }}</option>
+                            {% else %}
+                                <option value="{{ name }}">{{ name }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <img src="{{ url_for('crop_image', filename=data.source_filename, xy_upper_left=object.xyxy[0]|int|string+","+object.xyxy[1]|int|string, xy_bottom_right=object.xyxy[2]|int|string+","+object.xyxy[3]|int|string, frame_number=frame.frame_number) }}" alt="Cropped Image">
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
   
 </div>

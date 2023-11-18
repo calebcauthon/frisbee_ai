@@ -103,8 +103,6 @@ def save_detections(frame, frame_number, detections, projection, inference, deps
     deps["detections"].append(detection_map)
             
 def process_one_frame(index, frame, deps):
-    if index > 3:
-        return
     sink = deps["sink"]
     tracker = deps["tracker"]
 
