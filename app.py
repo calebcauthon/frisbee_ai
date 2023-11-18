@@ -4,6 +4,7 @@ import os
 from json_tricks import loads, dumps
 from library import logging, stats, drawing
 from web_ui.routes.gif import gif_route
+from web_ui.routes.annotations import annotations_route
 from types import SimpleNamespace
 
 app = Flask(__name__, static_folder='web_ui/static', template_folder='web_ui/templates')
@@ -15,7 +16,6 @@ import flask
 
 @app.route('/player_movies/<filename>_<player>.gif', methods=['GET'])
 def get_player_movie(filename, player):
-
     module_dependencies = SimpleNamespace(
         os=os,
         subprocess=subprocess,
@@ -121,34 +121,11 @@ def crop_image(filename):
 # http://localhost:5000/api/annotations/womens_goalty_10.mp4?skip=100&start=1&total_objects=100
 @app.route('/api/annotations/<filename>', methods=['GET'])
 def get_annotations(filename):
-    annotation_data = logging.get_annotation_data(filename)
-    if (annotation_data == {}):
-        return ""
-
-    skip = request.args.get('skip', default=100, type=int)
-    start = request.args.get('start', default=1, type=int)
-    total_objects = request.args.get('total_objects', default=100, type=int)
-    tracker_name = request.args.get('tracker_name', default=None, type=str)
-
-    if (tracker_name == 'all' or tracker_name == 'null'):
-        tracker_name = None
-
-    filtered_frames = []
-    object_count = 0
-    indexes = range(start, len(annotation_data['frames']), skip)
-    for i in indexes:
-        frame = annotation_data['frames'][i]
-        if tracker_name:
-            frame['objects'] = [obj for obj in frame['objects'] if obj['tracker_name'] == tracker_name]
-        object_count += len(frame['objects'])
-        if object_count > total_objects:
-            print(f"break because object_count: {object_count} > total_objects: {total_objects}")
-            break
-        
-        if len(frame['objects']) > 0:
-            filtered_frames.append(frame)
-    annotation_data['frames'] = filtered_frames
-    return render_template('annotation_data.html', data=annotation_data, query_params=request.args)
+    dependencies = SimpleNamespace(
+        logging=logging,
+        flask=flask
+    )
+    return annotations_route(dependencies, filename)
 
 @app.route('/tail')
 def tail():
