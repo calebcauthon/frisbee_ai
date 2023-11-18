@@ -1,4 +1,6 @@
 import pprint
+import cv2
+
 pp = pprint.PrettyPrinter(indent=4)
 
 def gif_route(module_dependencies, filename, player):
@@ -10,28 +12,33 @@ def gif_route(module_dependencies, filename, player):
     stats = module_dependencies.stats
 
     annotation_data = logging.get_annotation_data(filename)
-    pp.pprint(["annotation_data keys", annotation_data.keys()])
-    print(f"Number of frames: {len(annotation_data['frames'])}")
-    print(f"Number of players: {len(annotation_data['tracker_names'])}")
     player_frames = stats.get_player_frames(player, annotation_data)
     images = []
 
-    for index, frame in enumerate(player_frames[:20]):
-        output_filename = f"frame_{player}_{index}.png"
+    path = f"web_ui/static/video_targets/{filename}.mp4"
+    print(f"Opening {path}")
+    video = cv2.VideoCapture(path)
+    if not video.isOpened():
+        print("\033[91mError opening video stream or file\033[0m")
+        exit()
+    else:
+        print("\033[92mOpened video stream or file\033[0m")
+    
+    
+    for index, frame in enumerate(player_frames):
         for obj in frame['objects']:
             if obj['tracker_name'] == player:
-                xy_upper_left = f"{int(obj['xyxy'][0])},{int(obj['xyxy'][1])}"
-                xy_bottom_right = f"{int(obj['xyxy'][2])},{int(obj['xyxy'][3])}"
-                image_filename = drawing.crop_image_util(f"{filename}.mp4", xy_upper_left, xy_bottom_right, frame['frame_number'], output_filename=output_filename)
-                images.append(image_filename)
+                video.set(cv2.CAP_PROP_POS_FRAMES, frame['frame_number'])
+                ret, cv2_frame = video.read()
+                cropped_image = cv2_frame[int(obj['xyxy'][1])-10:int(obj['xyxy'][3])+10, int(obj['xyxy'][0])-10:int(obj['xyxy'][2])+10]
+                cropped_image_path = f'tmp/cv2_{player}_frame_{index}.jpg'
+                cv2.imwrite(cropped_image_path, cropped_image)
+                images.append(cropped_image_path)
                 break # out of objects
                 
-
-#    output = 'output.mp4'
-#    subprocess.call(['ffmpeg', '-i', 'tmp/frame%d.png', '-c:v', 'libvpx-vp9', '-y', output])
-    output = f"output_{player}.gif"
-    command = ['ffmpeg', '-y', '-i', f"tmp/frame_{player}_%d.png", '-vf', 'setpts=2.0*PTS', '-y', output]
-    print(f"Running {command}")
+    output = f"tmp/output_{player}.gif"
+    command = ['ffmpeg', '-y', '-i', f"tmp/cv2_{player}_frame_%d.jpg", '-vf', 'setpts=2.0*PTS', '-y', output]
+    print("\033[92mRunning {' '.join(command)}\033[0m")
     subprocess.call(command)
     gif_output = flask.send_file(output, mimetype='image/gif')
 
@@ -42,9 +49,12 @@ def gif_route(module_dependencies, filename, player):
     return gif_output
 
 def test_debug():
+    import subprocess
+    import os
+
     deps = mock.Mock()
-    deps.os = mock.Mock()
-    deps.subprocess = mock.Mock()
+    deps.os = os#mock.Mock()
+    deps.subprocess = subprocess#mock.Mock()
     deps.flask = mock.Mock()
     deps.drawing = mock.Mock()
     deps.logging = logging

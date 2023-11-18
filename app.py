@@ -121,7 +121,7 @@ def crop_image(filename):
 # http://localhost:5000/api/annotations/womens_goalty_10.mp4?skip=100&start=1&total_objects=100
 @app.route('/api/annotations/<filename>', methods=['GET'])
 def get_annotations(filename):
-    annotation_data = get_annotation_data(filename)
+    annotation_data = logging.get_annotation_data(filename)
     if (annotation_data == {}):
         return ""
 
