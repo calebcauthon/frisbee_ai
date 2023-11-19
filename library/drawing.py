@@ -70,11 +70,20 @@ def get_name(deps, tracker_id):
          tracker_names[name] = [int(tracker_id)]
 
 def get_labels(detections, deps):
-    labels = [
-        f"{get_name(deps, tracker_id)}"
-        for bbox, _, confidence, class_id, tracker_id
-        in detections
-    ]
+    existing_data = deps.get("existing_annotation_data", {})
+    current_frame_number = deps["status"]["current_frame"]["index"]
+
+    labels = []
+    for bbox, _, confidence, class_id, tracker_id in detections:
+        name = get_name(deps, tracker_id)
+        total_distance_so_far = 0
+        for frame in existing_data.get('frames', []):
+            if (frame['frame_number'] < current_frame_number):
+                for obj in frame['objects']:
+                    if obj['tracker_name'] == name:
+                        total_distance_so_far += obj.get('distance_travelled', 0)
+        distance_rounded = round(total_distance_so_far)
+        labels.append(f"{name} {distance_rounded}ft")
 
     return labels
 

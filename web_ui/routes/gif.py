@@ -11,7 +11,8 @@ def gif_route(module_dependencies, filename, player):
     logging = module_dependencies.logging
     stats = module_dependencies.stats
 
-    annotation_data = logging.get_annotation_data(filename)
+    annotation_filename = f'{filename}_annotation_data.json'
+    annotation_data = logging.get_annotation_data(annotation_filename)
     player_frames = stats.get_player_frames(player, annotation_data)
     images = []
 

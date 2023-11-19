@@ -32,31 +32,35 @@ def get_stats(annotation_data):
       "box_score": box_score
     }
 
-def get_frames_with_distance_travelled(name, frames):
-  frames = exclude_other_players(name, frames)
+def get_frames_with_distance_travelled(frames):
   last_frame = None
   frames_with_distance = []
   for frame in frames:
       if not frame["objects"]:
           continue
       
-      current_position = frame["objects"][0]["field_position"]
-      if last_frame is not None:
-          prev_position = last_frame["objects"][0]["field_position"]
-          distance = ((current_position[0] - prev_position[0])**2 + (current_position[1] - prev_position[1])**2)**0.5
-
-          frame["objects"][0]["distance_travelled"] = distance
-          frames_with_distance.append(frame)
+      for current_object in frame["objects"]:
+          current_position = current_object["field_position"]
+          if last_frame is not None:
+              for prev_object in last_frame["objects"]:
+                  if prev_object["tracker_name"] == current_object["tracker_name"]:
+                      prev_position = prev_object["field_position"]
+                      distance = ((current_position[0] - prev_position[0])**2 + (current_position[1] - prev_position[1])**2)**0.5
+                      current_object["distance_travelled"] = distance
+      frames_with_distance.append(frame)
 
       last_frame = frame
 
   return frames_with_distance
 
 def get_distance_travelled(name, frames):
-  frames = get_frames_with_distance_travelled(name, frames)
+  frames = exclude_other_players(name, frames)
+  frames = get_frames_with_distance_travelled(frames)
   total_distance = 0
   for frame in frames:
-      total_distance += frame["objects"][0]["distance_travelled"]
+    for obj in frame["objects"]:
+        if ("distance_travelled" in obj):
+            total_distance += obj["distance_travelled"]
 
   return total_distance
 
@@ -95,6 +99,18 @@ def test_get_distance_travelled():
         expected = test_case["expected"]
         assert result == expected, f"Expected {expected}, but got {result}"
         print (f"\033[92mtest_get_distance_travelled() passed {index + 1} of {len(test_cases)} \033[0m")
+
+def test_get_distance_travelled_with_missing_frame():
+    frame1 = {"frame_number": 0, "objects": [{"field_position": (0, 0), "tracker_name": "Isabella"}]}
+    frame2 = {"frame_number": 1, "objects": [{"field_position": (0, 1), "tracker_name": "OTHER"}]}
+    frame3 = {"frame_number": 2, "objects": [{"field_position": (0, 2), "tracker_name": "Isabella"}]}
+    
+    frames = [frame1, frame2, frame3]
+
+    result = get_distance_travelled("Isabella", frames)
+    expected = 2
+    assert result == expected, f"Expected {expected}, but got {result}"
+    print (f"\033[92mtest_get_distance_travelled_with_missing_frame() passed\033[0m")
 
 def test_get_distance_travelled_with_extra_frame():
     test_cases = [
@@ -237,6 +253,29 @@ def test_get_player_frames():
 
     print("\033[92mtest_get_player_frames() passed\033[0m")
 
+def test_get_frames_with_distance_travelled():
+    frame1 = {"frame_number": 0, "objects": [
+        {"field_position": (0, 0), "tracker_name": "Isabella"}
+    ]}
+    frame2 = {"frame_number": 0, "objects": [
+        {"field_position": (5, 0), "tracker_name": "Isabella"},
+        {"field_position": (0, 5), "tracker_name": "Todd"}
+    ]}
+    frame3 = {"frame_number": 0, "objects": [
+        {"field_position": (0, 15), "tracker_name": "Todd"}
+    ]}
+
+    frames = [frame1, frame2, frame3]
+
+    get_frames_with_distance_travelled(frames)
+
+    frame2_isabella_distance = frame2["objects"][0]["distance_travelled"]
+    assert frame2_isabella_distance == 5, f"Expected 5, but got {frame2_isabella_distance}"
+
+    frame3_todd_distance = frame3["objects"][0]["distance_travelled"]
+    assert frame3_todd_distance == 10, f"Expected 10, but got {frame3_todd_distance}"
+
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "test":
@@ -244,3 +283,5 @@ if __name__ == "__main__":
         test_get_distance_travelled()
         test_get_distance_travelled_with_extra_frame()
         test_get_distance_multiple_players()
+        test_get_distance_travelled_with_missing_frame()
+        test_get_frames_with_distance_travelled()

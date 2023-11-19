@@ -97,6 +97,7 @@
 <table>
 <thead>
     <tr>
+        <th>Stats LInk</th>
         {% for name, value in game_data.box_score[0].items() %}
             <th>{{ name }}</th>
         {% endfor %}
@@ -106,6 +107,7 @@
 {% for row in game_data.box_score %}
     {% if row["frame_count"] != 0 %}
         <tr>
+            <td><a href="/player_stats/{{filename}}.mp4?player={{ row['name'] }}">{{ row["name"] }}</a></td>
             {% for name, value in row.items() %}
                 <td>{{ value }}</td>
             {% endfor %}

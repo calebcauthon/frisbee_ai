@@ -58,12 +58,12 @@
     <script>
 
         var lastVideo = null;
-        function loadAnnotationTable(video, {skip = 100, start = 1, total_objects = 100, name_filter = 'all', double_only = false, tracker_id_filter = 'all'} = {}) {
+        function loadAnnotationTable(video, {skip = 10, start = 1, total_objects = 25, name_filter = 'all', double_only = false, tracker_id_filter = 'all', distance_anomoly_threshold = 0} = {}) {
             if (!video) {
                 video = lastVideo;
             }            
 
-            fetch(`/api/annotations/${video.filename.replace('.mp4', '')}?skip=${skip}&start=${start}&total_objects=${total_objects}&name_filter=${name_filter}&double_only=${double_only}&tracker_id_filter=${tracker_id_filter}`)
+            fetch(`/api/annotations/${video.filename.replace('.mp4', '')}?skip=${skip}&start=${start}&total_objects=${total_objects}&name_filter=${name_filter}&double_only=${double_only}&tracker_id_filter=${tracker_id_filter}&distance_anomoly_threshold=${distance_anomoly_threshold}`)
                 .then(response => response.text())
                 .then(data => {
                     const detectionsTable = document.getElementById('detections-table');
@@ -73,6 +73,9 @@
                     };
 
                     document.getElementById('load_new_frames').onclick = () => {
+                        const distanceAnomolyThresholdInput = document.getElementById('distance_anomoly_threshold');
+                        const distance_anomoly_threshold = distanceAnomolyThresholdInput.value ? distanceAnomolyThresholdInput.value : '0';
+
                         const skipInput = document.getElementById('skip');
                         const startInput = document.getElementById('start');
                         const totalObjectsInput = document.getElementById('total_objects');
@@ -85,7 +88,7 @@
                         const name_filter = nameFilterInput.value ? nameFilterInput.value : 'all';
                         const double_only = doubleOnlyInput.checked ? true : false;
                         const tracker_id_filter = trackerIdFilterInput.value ? trackerIdFilterInput.value : 'all';
-                        loadAnnotationTable(video, {skip: skip, start: start, total_objects: total_objects, name_filter: name_filter, double_only: double_only, tracker_id_filter: tracker_id_filter});
+                        loadAnnotationTable(video, {skip: skip, start: start, total_objects: total_objects, name_filter: name_filter, double_only: double_only, tracker_id_filter: tracker_id_filter, distance_anomoly_threshold: distance_anomoly_threshold});
                     };
 
                     document.getElementById('load_all_frames').onclick = () => {

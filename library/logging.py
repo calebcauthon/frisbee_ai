@@ -29,7 +29,9 @@ def update_tracker_names_based_on_tracker_map(frames, tracker_map):
                   break
 
 def move_tracking_id_to_another_name(old_tracker_id, new_name, video_path):
-    annotation_data = read_detection_data_from_file(video_path)
+    video_filename = os.path.splitext(os.path.basename(video_path))[0]
+    annotation_filename = f"{video_filename}_annotation_data.json"
+    annotation_data = get_annotation_data(annotation_filename)
     tracker.move_tracking_id_to_another_name(old_tracker_id, new_name, annotation_data["tracker_names"])
     update_tracker_names_based_on_tracker_map(annotation_data["frames"], annotation_data["tracker_names"])
     write_annotation_data_to_file(video_path, annotation_data)
@@ -108,7 +110,9 @@ def append_to_output_file(message):
         f.write(message + '\n')
 
 def split_tracker_id(tracker_id, frame_number, video_path):
-    annotation_data = read_detection_data_from_file(video_path)
+    video_file_without_extension = os.path.splitext(os.path.basename(video_path))[0]
+    annotation_filename = f"{video_file_without_extension}_annotation_data.json"
+    annotation_data = get_annotation_data(annotation_filename)
     tracker.split_tracker_id(tracker_id, frame_number, annotation_data["tracker_names"], annotation_data["frames"])
     update_tracker_names_based_on_tracker_map(annotation_data["frames"], annotation_data["tracker_names"])
     write_annotation_data_to_file(video_path, annotation_data)

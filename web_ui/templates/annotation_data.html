@@ -136,6 +136,10 @@
   <button id="load_all_frames">All Frames</button>
   <br />
 
+  <label>Distance Anomalies: 
+    <label>Distance Threshold: 
+      <input id="distance_anomoly_threshold" type="text" value="{{ query_params.distance_anomoly_threshold }}">
+  </label><br />
   <label>Tracker ID filter: <input id="tracker_id_filter" type="text" value="{{ query_params.tracker_id_filter }}"></label><br />
   <labe>Double Only: <input id="double_only" type="checkbox" value="true" {{ "checked" if query_params.double_only == 'true' }}></label><br />
   <label>Name filter: 

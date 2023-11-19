@@ -6,6 +6,7 @@ from library.homography import *
 from library import homography
 from library.logging import *
 from library import logging
+from library import stats
 import os
 import supervision as sv
 import pprint
@@ -142,6 +143,11 @@ def process_one_frame(index, frame, deps):
                 exit()
             else:
                 print("\033[92m" + f"Frame Match: frames in annotation data ({len(existing_annotation_data['frames'])}) == frames in video ({video_info.total_frames})" + "\033[0m")
+
+            tracker_names = existing_annotation_data["tracker_names"].keys()
+            for name in tracker_names:
+                stats.get_distance_travelled(name, existing_annotation_data['frames'])
+
         existing_annotation_data = deps["existing_annotation_data"]
 
         deps["tracker_names"] = existing_annotation_data["tracker_names"]
@@ -224,6 +230,8 @@ if __name__ == "__main__":
         type=str,
         default=None,
     )
+
+    
 
     args = parser.parse_args()
 
