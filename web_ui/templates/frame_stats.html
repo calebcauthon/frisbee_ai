@@ -1,0 +1,20 @@
+<table>
+    <thead>
+        <tr>
+            <th>Frame Number</th>
+            <th>Tracker Name</th>
+            <th>Tracker ID</th>
+            <th>data</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for obj in frame['objects'] %}
+        <tr>
+            <td>{{ frame['frame_number'] }}</td>
+            <td>{{ obj['tracker_name'] }}</td>
+            <td>{{ obj['tracker_id'] }}</td>
+            <td>{{ obj }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

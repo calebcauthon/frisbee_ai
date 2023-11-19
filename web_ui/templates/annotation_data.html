@@ -2,6 +2,7 @@
   a { color: #0035ff; }
   button { color: #fff; background-color: #4a5568; border-radius: 0.25rem; padding: 0.5rem 1rem; }
   .frame-number { font-size: 5rem; }
+  .split { width: 75%; text-align: center; padding: 0; }
   table {
 
     font-family: "Open Sans", sans-serif;
@@ -135,7 +136,16 @@
   <button id="load_all_frames">All Frames</button>
   <br />
 
-  <label>Name filter: <input id="name_filter" type="text" value="{{ query_params.name_filter }}"></label><br />
+  <label>Tracker ID filter: <input id="tracker_id_filter" type="text" value="{{ query_params.tracker_id_filter }}"></label><br />
+  <labe>Double Only: <input id="double_only" type="checkbox" value="true" {{ "checked" if query_params.double_only == 'true' }}></label><br />
+  <label>Name filter: 
+    <select id="name_filter">
+      <option value="all" {% if "all" == query_params.name_filter %}selected{% endif %}>All</option>
+      {% for name in data.tracker_names.keys() %}
+        <option value="{{ name }}" {% if name == query_params.name_filter %}selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+  </label><br />
   <label>Total Objects: <input id="total_objects" type="number" value="{{ query_params.total_objects }}"></label><br />
   <label>Skip: <input id="skip" type="number" value="{{ query_params.skip }}"></label><br />
   <label>Start: <input id="start" type="number" value="{{ query_params.start }}"></label><br />
@@ -146,6 +156,7 @@
         <tbody>
             {% for frame in data.frames %}
             <tr>
+              
                 <td class="frame-number">{{ frame.frame_number }}</td>
                 {% for object in frame.objects %}
                 <td>
@@ -159,6 +170,7 @@
                         {% endfor %}
                     </select>
                     <img src="{{ url_for('crop_image', filename=data.source_filename, xy_upper_left=object.xyxy[0]|int|string+","+object.xyxy[1]|int|string, xy_bottom_right=object.xyxy[2]|int|string+","+object.xyxy[3]|int|string, frame_number=frame.frame_number) }}" alt="Cropped Image">
+                    <button class="split" onclick='splitTrackerId("{{ object.tracker_id }}", "{{ frame.frame_number }}")'>Split</button></td>
                 </td>
                 {% endfor %}
             </tr>

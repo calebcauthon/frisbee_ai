@@ -104,6 +104,14 @@ def append_to_output_file(message):
     with open('web_ui/output.txt', 'a') as f:
         f.write(message + '\n')
 
+def split_tracker_id(tracker_id, frame_number, video_path):
+    annotation_data = read_detection_data_from_file(video_path)
+    tracker.split_tracker_id(tracker_id, frame_number, annotation_data["tracker_names"], annotation_data["frames"])
+    update_tracker_names_based_on_tracker_map(annotation_data["frames"], annotation_data["tracker_names"])
+    write_annotation_data_to_file(video_path, annotation_data)
+
+
+
 def remove_player(name, video_path):
     annotation_data = read_detection_data_from_file(video_path)
     tracker.remove_tracker_name(name, annotation_data["tracker_names"], annotation_data["frames"])

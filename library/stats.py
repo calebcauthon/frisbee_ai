@@ -44,6 +44,8 @@ def get_frames_with_distance_travelled(name, frames):
       if last_frame is not None:
           prev_position = last_frame["objects"][0]["field_position"]
           distance = ((current_position[0] - prev_position[0])**2 + (current_position[1] - prev_position[1])**2)**0.5
+          if (distance > 2):
+              distance = 0
 
           frame["objects"][0]["distance_travelled"] = distance
           frames_with_distance.append(frame)
