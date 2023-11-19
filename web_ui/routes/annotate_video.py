@@ -1,11 +1,5 @@
 def annotate_video_route(dependencies):
-    flask = dependencies.flask
-    data = flask.request.get_json()
-    source_video_path = data.get('source_video_path')
-    source_video_path = source_video_path.split('static', 1)[-1]
-    if source_video_path.startswith('//'):
-        source_video_path = source_video_path[1:]
-
+    source_video_path = get_source_video_path(dependencies)
     frame_limit_flag = get_frame_limit(dependencies)
 
     source_filename = dependencies.os.path.basename(source_video_path)
@@ -16,6 +10,16 @@ def annotate_video_route(dependencies):
     command = f"poetry shell && python process_video.py --source_video_path web_ui/static/{source_video_path} --target_video_path {target_video_path} {frame_limit_flag}"
     dependencies.subprocess.Popen(command, shell=True)
     return {"message": "Video processing started"}, 200
+
+def get_source_video_path(dependencies):
+    flask = dependencies.flask
+    data = flask.request.get_json()
+    source_video_path = data.get('source_video_path')
+    source_video_path = source_video_path.split('static', 1)[-1]
+    if source_video_path.startswith('//'):
+        source_video_path = source_video_path[1:]
+
+    return source_video_path
 
 def get_frame_limit(dependencies):
     data = dependencies.flask.request.get_json()
