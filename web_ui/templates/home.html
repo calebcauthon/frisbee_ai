@@ -45,17 +45,12 @@
     <script>
 
         var lastVideo = null;
-        var lastTrackerName = null
-        function loadAnnotationTable(video, {skip = 100, start = 1, total_objects = 100, tracker_name = 'all'} = {}) {
+        function loadAnnotationTable(video, {skip = 100, start = 1, total_objects = 100, name_filter = 'all'} = {}) {
             if (!video) {
                 video = lastVideo;
             }            
 
-            if (!tracker_name && lastTrackerName) {
-                tracker_name = lastTrackerName;
-            }
-
-            fetch(`/api/annotations/${video.filename.replace('.mp4', '')}?skip=${skip}&start=${start}&total_objects=${total_objects}&tracker_name=${tracker_name}`)
+            fetch(`/api/annotations/${video.filename.replace('.mp4', '')}?skip=${skip}&start=${start}&total_objects=${total_objects}&name_filter=${name_filter}`)
                 .then(response => response.text())
                 .then(data => {
                     const detectionsTable = document.getElementById('detections-table');
@@ -68,17 +63,19 @@
                         const skipInput = document.getElementById('skip');
                         const startInput = document.getElementById('start');
                         const totalObjectsInput = document.getElementById('total_objects');
+                        const nameFilterInput = document.getElementById('name_filter');
                         const skip = skipInput.value ? skipInput.value : Math.floor(Math.random() * 101);
                         const start = startInput.value ? startInput.value : Math.floor(Math.random() * (video.total_frames));
                         const total_objects = totalObjectsInput.value ? totalObjectsInput.value : 100;
-                        loadAnnotationTable(video, {skip: skip, start: start, total_objects: total_objects, tracker_name: tracker_name});
+                        const name_filter = nameFilterInput.value ? nameFilterInput.value : 'all';
+                        loadAnnotationTable(video, {skip: skip, start: start, total_objects: total_objects, name_filter: name_filter});
                     };
 
                     document.getElementById('load_all_frames').onclick = () => {
                         const skip = 1
                         const start = 0
                         const total_objects = 250
-                        loadAnnotationTable(video, {skip: skip, start: start, total_objects: total_objects, tracker_name: tracker_name});
+                        loadAnnotationTable(video, {skip: skip, start: start, total_objects: total_objects, name_filter: name_filter});
                     };
                 })
                 .catch((error) => {

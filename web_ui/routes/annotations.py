@@ -11,18 +11,18 @@ def annotations_route(dependencies, filename):
     skip = flask.request.args.get('skip', default=100, type=int)
     start = flask.request.args.get('start', default=1, type=int)
     total_objects = flask.request.args.get('total_objects', default=100, type=int)
-    tracker_name = flask.request.args.get('tracker_name', default=None, type=str)
+    name_filter = flask.request.args.get('name_filter', default=None, type=str)
 
-    if (tracker_name == 'all' or tracker_name == 'null'):
-        tracker_name = None
+    if (name_filter == 'all' or name_filter == 'null'):
+        name_filter = None
 
     filtered_frames = []
     object_count = 0
     indexes = range(start, len(annotation_data['frames']), skip)
     for i in indexes:
         frame = annotation_data['frames'][i]
-        if tracker_name:
-            frame['objects'] = [obj for obj in frame['objects'] if obj['tracker_name'] == tracker_name]
+        if name_filter:
+            frame['objects'] = [obj for obj in frame['objects'] if obj['tracker_name'] == name_filter]
         object_count += len(frame['objects'])
         if object_count > total_objects:
             print(f"break because object_count: {object_count} > total_objects: {total_objects}")

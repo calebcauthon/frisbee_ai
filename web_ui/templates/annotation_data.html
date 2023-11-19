@@ -112,7 +112,7 @@
                 <input id="tracker_name_{{ name }}" type="text" value="{{ name }}" onchange='changeTrackerName("{{ name }}", this.value, "{{ data.video_path }}")'>
               </td>
               <td>
-                <button onclick='loadAnnotationTable(null, { skip: 10, tracker_name: "{{ name }}" });'>Show Frames</button>
+                <button onclick='loadAnnotationTable(null, { skip: 10, name_filter: "{{ name }}" });'>Show Frames</button>
               </td>
               <td>
                 <a href="/player_stats/{{ video_short_path }}.mp4?player={{ name }}"><button>Frame Details</button></a>
@@ -134,6 +134,8 @@
   <button id="load_new_frames">Selected Frames</button>
   <button id="load_all_frames">All Frames</button>
   <br />
+
+  <label>Name filter: <input id="name_filter" type="text" value="{{ query_params.name_filter }}"></label><br />
   <label>Total Objects: <input id="total_objects" type="number" value="{{ query_params.total_objects }}"></label><br />
   <label>Skip: <input id="skip" type="number" value="{{ query_params.skip }}"></label><br />
   <label>Start: <input id="start" type="number" value="{{ query_params.start }}"></label><br />
