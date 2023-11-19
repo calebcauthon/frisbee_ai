@@ -41,13 +41,13 @@ def change_tracker_name(old_name, new_name, video_path):
     write_annotation_data_to_file(video_path, annotation_data)
 
 def write_detection_data_to_file(deps, detections):
-    objects = [{
+    frames = [{
       "objects": detection['objects'],
       "frame_number": detection['frame_number']
     } for detection in detections]
     
     annotation_data = {
-      "frames": objects,
+      "frames": frames,
       "video_path": deps["target_video_path"],
       "source_path": deps["source_video_path"],
       "source_filename": os.path.basename(deps["source_video_path"]),

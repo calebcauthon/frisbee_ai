@@ -46,9 +46,6 @@ def crop_image_util(filename, xy_upper_left, xy_bottom_right, frame_number, outp
     return f"tmp/{random_filename}"
 
 def get_tracker_data(deps):
-    if "tracker_names" not in deps:
-        data = logging.read_detection_data_from_file(deps["target_video_path"])
-        deps["tracker_names"] = data["tracker_names"]
     return deps["tracker_names"]
 
 

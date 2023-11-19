@@ -19,7 +19,7 @@ def get_annotation_filename(dependencies):
     if annotation_filename is None:
         return ""
     else:
-      return f"--annotation_file web_ui/static/annotation_data/{annotation_filename}"
+      return f"--use_predictions_from_annotations_file web_ui/static/annotation_data/{annotation_filename}"
 
 def get_source_video_path(dependencies):
     flask = dependencies.flask

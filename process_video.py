@@ -29,7 +29,8 @@ deps = {}
 def process_video(
     source_video_path: str,
     target_video_path: str,
-    frame_limit: int = None
+    frame_limit: int = None,
+    use_predictions_from_annotations_file: str = None
 ) -> None:
     tracker, box_annotator, label_annotator, frame_generator, video_info = initialize_video_processing(source_video_path)
     _t, _, _l, _f, video_info2 = initialize_video_processing(source_video_path)
@@ -47,7 +48,10 @@ def process_video(
     deps["yardage_points"] = homography.get_yardage_points()
     deps["homography_points"] = homography.get_homography_points()
     deps["homography_points"]["calibration"] = homography.get_calibration_points(deps)
-
+    deps["params"] = {
+       "frame_limit": frame_limit,
+       "use_predictions_from_annotations_file": use_predictions_from_annotations_file
+    }
 
     clearLogs()
     log(deps, "Redrawing video...")
@@ -62,18 +66,9 @@ def process_video(
     video_info.width += 1200
     blank_image = np.zeros((video_info.height, video_info.width, 3), np.uint8)
 
-    video_file_without_path = os.path.basename(source_video_path)
-    annotation_file = video_file_without_path.replace(".mp4", "_annotated_annotation_data.json")
-    print(f"Generated annotation file {annotation_file} from {source_video_path}")
-    existing_annotation_data = logging.get_annotation_data(annotation_file)
-    print("\033[92m" + f"Loaded {len(existing_annotation_data['frames'])} frames from {annotation_file} existing annotation data" + "\033[0m")
     print("\033[33m" + f"Loaded video {source_video_path} with {video_info.total_frames} frames" + "\033[0m")
-    if (len(existing_annotation_data['frames']) != video_info.total_frames):
-        print("\033[91m" + f"Frame Mismatch Error: frames in annotation data ({len(existing_annotation_data['frames'])}) != frames in video ({video_info.total_frames})" + "\033[0m")
-        exit()
-
-    deps["existing_annotation_data"] = existing_annotation_data
-    deps["tracker_names"] = existing_annotation_data["tracker_names"]
+    
+    deps["tracker_names"] = {}
     with sv.VideoSink(target_path=target_video_path, video_info=video_info, codec=[*"mp4v"]) as sink:
         deps["sink"] = sink
         for index, frame in enumerate(tqdm(frame_generator, total=video_info.total_frames)):
@@ -92,7 +87,7 @@ def process_video(
             process_one_frame(index, blank_image, deps)
 
     logReplace(deps, "PROGRESS", "PROGRESS: " + tqdm.format_meter(video_info.total_frames, video_info.total_frames, 0, 0))
-    #logging.write_detection_data_to_file(deps, deps["detections"])
+    logging.write_detection_data_to_file(deps, deps["detections"])
     log(deps, "Wrote detection data to file")
     log(deps, "COMPLETED")
     
@@ -111,7 +106,6 @@ def save_detections(frame, frame_number, detections, projections, inference, dep
             "tracker_name": get_name(deps, detections.tracker_id[index]),
             "xyxy": detections.xyxy[index].tolist(),
             "class": prediction["class"],
-            "center": [int(prediction["x"]), int(prediction["y"])],
             "width": int(prediction["width"]),
             "height": int(prediction["height"]),
         })
@@ -129,30 +123,50 @@ def process_one_frame(index, frame, deps):
     sink = deps["sink"]
     tracker = deps["tracker"]
 
-    #roboflow_result = predict_frame(frame, deps)
+    detections = None
+    if (deps["params"]["use_predictions_from_annotations_file"] is None):
+        roboflow_result = predict_frame(frame, deps)
+        detections = sv.Detections.from_roboflow(roboflow_result)
+        detections = tracker.update_with_detections(detections)
+    else:
+        if "existing_annotation_data" not in deps:
+            annotation_full_path = deps["params"]["use_predictions_from_annotations_file"]
+            annotation_filename_only = os.path.basename(annotation_full_path)
+            deps["existing_annotation_data"] = logging.get_annotation_data(annotation_filename_only)
+            print("\033[92m" + f"Loaded {len(deps['existing_annotation_data']['frames'])} frames from {annotation_filename_only} existing annotation data" + "\033[0m")
 
-    existing = deps["existing_annotation_data"]["frames"][index]["objects"]
-    existing_in_roboflow_format = []
-    for obj in existing:
-        existing_in_roboflow_format.append({
-            "x": (obj["xyxy"][0] + obj["xyxy"][2]) / 2.0,
-            "y": (obj["xyxy"][1] + obj["xyxy"][3]) / 2.0,
-            "width": obj["xyxy"][2] - obj["xyxy"][0],
-            "height": obj["xyxy"][3] - obj["xyxy"][1],
-            "confidence": obj["confidence"],
-            "class": obj["class"],
-            "class_id": obj["class_id"],
-            "tracker_id": obj["tracker_id"]
-        })
-    roboflow_result_with_existing = {
-        "image": {
-            "width": frame.shape[1],
-            "height": frame.shape[0]
+            video_info = deps["video_info"]
+            existing_annotation_data = deps["existing_annotation_data"]
+            if (len(existing_annotation_data['frames']) != video_info.total_frames):
+                print("\033[91m" + f"Frame Mismatch Error: frames in annotation data ({len(existing_annotation_data['frames'])}) != frames in video ({video_info.total_frames})" + "\033[0m")
+                exit()
+            else:
+                print("\033[92m" + f"Frame Match: frames in annotation data ({len(existing_annotation_data['frames'])}) == frames in video ({video_info.total_frames})" + "\033[0m")
+        existing_annotation_data = deps["existing_annotation_data"]
+
+        deps["tracker_names"] = existing_annotation_data["tracker_names"]
+        existing = existing_annotation_data["frames"][index]["objects"]
+        existing_in_roboflow_format = []
+        for obj in existing:
+            existing_in_roboflow_format.append({
+                "x": (obj["xyxy"][0] + obj["xyxy"][2]) / 2.0,
+                "y": (obj["xyxy"][1] + obj["xyxy"][3]) / 2.0,
+                "width": obj["xyxy"][2] - obj["xyxy"][0],
+                "height": obj["xyxy"][3] - obj["xyxy"][1],
+                "confidence": obj["confidence"],
+                "class": obj["class"],
+                "class_id": obj["class_id"],
+                "tracker_id": obj["tracker_id"]
+            })
+        roboflow_result = {
+            "image": {
+                "width": frame.shape[1],
+                "height": frame.shape[0]
+            }
         }
-    }#roboflow_result
+        roboflow_result["predictions"] = existing_in_roboflow_format
+        detections = sv.Detections.from_roboflow(roboflow_result)
     
-    roboflow_result_with_existing["predictions"] = existing_in_roboflow_format
-    detections = sv.Detections.from_roboflow(roboflow_result_with_existing)
 
     frame = annotate(frame, detections, deps)
     draw_field(frame, deps)
@@ -169,7 +183,7 @@ def process_one_frame(index, frame, deps):
       draw_player_projection(projection, frame, deps)
       projections.append(projection)
 
-    #save_detections(frame, index, detections, projections, roboflow_result_with_existing, deps)
+    save_detections(frame, index, detections, projections, roboflow_result, deps)
     sink.write_frame(frame=frame)
 
 
@@ -203,10 +217,19 @@ if __name__ == "__main__":
         default=None,
     )
 
+    parser.add_argument(
+        "--use_predictions_from_annotations_file",
+        required=False,
+        help="Path to the annotation file",
+        type=str,
+        default=None,
+    )
+
     args = parser.parse_args()
 
     process_video(
         source_video_path=args.source_video_path,
         target_video_path=args.target_video_path,
-        frame_limit=args.frame_limit
+        frame_limit=args.frame_limit,
+        use_predictions_from_annotations_file=args.use_predictions_from_annotations_file
     )
