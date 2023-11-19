@@ -44,20 +44,11 @@ def get_frames_with_distance_travelled(name, frames):
       if last_frame is not None:
           prev_position = last_frame["objects"][0]["field_position"]
           distance = ((current_position[0] - prev_position[0])**2 + (current_position[1] - prev_position[1])**2)**0.5
-          if (distance > 2):
-              distance = 0
 
           frame["objects"][0]["distance_travelled"] = distance
           frames_with_distance.append(frame)
 
-      if frame["frame_number"] == 13:
-          # Label the frame
-          print("Current Frame:", frame)
-          print("Last Frame:", last_frame)
-
       last_frame = frame
-
-      
 
   return frames_with_distance
 
@@ -104,7 +95,6 @@ def test_get_distance_travelled():
         expected = test_case["expected"]
         assert result == expected, f"Expected {expected}, but got {result}"
         print (f"\033[92mtest_get_distance_travelled() passed {index + 1} of {len(test_cases)} \033[0m")
-
 
 def test_get_distance_travelled_with_extra_frame():
     test_cases = [
@@ -163,7 +153,6 @@ def test_get_distance_multiple_players():
             result = get_distance_travelled(player, frames)
             assert result == expected, f"Expected {expected}, but got {result} for player {player}"
         print (f"\033[92mtest_get_distance_multiple_players() passed {index + 1} of {len(test_cases)} \033[0m")
-
 
 def test_get_player_frames():
     annotation_data = {

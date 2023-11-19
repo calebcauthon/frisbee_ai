@@ -38,8 +38,6 @@ def change_tracking_id_on_all_frames(frames, old_tracking_id, new_tracking_id):
             if obj["tracker_id"] == old_tracking_id:
                 obj["tracker_id"] = new_tracking_id
 
-
-
     print("\033[92mtest_change_tracking_id_on_all_frames() passed\033[0m")
 
 def move_tracking_id_to_another_name(tracking_id, new_name, tracker_map):

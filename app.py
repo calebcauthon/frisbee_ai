@@ -23,7 +23,6 @@ def split_tracker_id():
     logging.split_tracker_id(tracker_id, frame_number, video_path)
     return dumps({'status': 'success'})
 
-
 @app.route('/frame_stats/<filename>.mp4', methods=['GET'])
 def get_frame_stats(filename):
     frame_number = request.args.get('frame', default=1, type=int)
@@ -200,8 +199,6 @@ def annotate_video():
     import subprocess
     subprocess.Popen(command, shell=True)
     return {"message": "Video processing started"}, 200
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)
