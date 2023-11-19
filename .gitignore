@@ -3,3 +3,4 @@ videos/
 *.mp4
 */web_ui/output.txt
 */*.jpg
+*/web_ui/static/annotation_data/

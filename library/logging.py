@@ -5,7 +5,8 @@ from json_tricks import dumps, loads
 from library import tracker
 
 def get_annotation_data(filename):
-    annotation_file = os.path.join('web_ui', 'static', 'annotation_data', f'{filename}_annotation_data.json')
+    annotation_file = os.path.join('web_ui', 'static', 'annotation_data', filename)
+    print(f"\033[94mReading annotation file {annotation_file}\033[0m")
     if not os.path.exists(annotation_file):
         print(f"Annotation file {annotation_file} does not exist")
         return {}
@@ -61,8 +62,11 @@ def write_annotation_data_to_file(video_path, annotation_data):
         f.write(dumps(annotation_data))
 
 def read_detection_data_from_file(path):
+    print(f"Obsolte function read_detection_data_from_file() called with path {path}")
+    exit()
     filename = os.path.splitext(os.path.basename(path))[0]
     annotation_file = os.path.join('web_ui', 'static', 'annotation_data', f'{filename}_annotation_data.json')
+    print(f"\033[94mReading annotation file {annotation_file}\033[0m")
     if not os.path.exists(annotation_file):
         return {
             "tracker_names": {},
@@ -77,11 +81,12 @@ def clearLogs():
         f.write(f"File created at: {time.ctime(os.path.getctime('web_ui/output.txt'))}\n")
 
 def log(deps, message):
-    deps["logs"].append(message)
+    #deps["logs"].append(message)
     print(f"LOG: {message}")
-    append_to_output_file(message)
+    #append_to_output_file(message)
 
 def logReplace(deps, starting_word, new_message):
+    return
     for i, entry in enumerate(deps["logs"]):
         if entry.startswith(starting_word):
             deps["logs"][i] = new_message

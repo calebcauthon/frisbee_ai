@@ -4,7 +4,8 @@ def annotations_route(dependencies, filename):
     logging = dependencies.logging
     flask = dependencies.flask
 
-    annotation_data = logging.get_annotation_data(filename)
+    annotation_filename = f'{filename}_annotation_data.json'
+    annotation_data = logging.get_annotation_data(annotation_filename)
     if (annotation_data == {}):
         return annotation_data
 

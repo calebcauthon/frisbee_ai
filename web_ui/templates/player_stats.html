@@ -103,7 +103,8 @@
         <th>Timestamp</th>
         <th>Tracker ID</th>
         <th>XYXY</th>
-        <th>Center</th>
+        <th>Width</th>
+        <th>Height</th>
         <th>Field position</th>
         <th>Distance Travelled</th>
     </tr>
@@ -124,7 +125,8 @@
         <td>{{ row.frame_number / 25 }}</td>
         <td>{{ row.objects[0].tracker_id }}</td>
         <td>{{ row.objects[0].xyxy[0] }}, {{ row.objects[0].xyxy[1] }}, {{ row.objects[0].xyxy[2] }}, {{ row.objects[0].xyxy[3] }}</td>
-        <td>{{ row.objects[0].center }}</td>
+        <td>{{ row.objects[0].width }}</td>
+        <td>{{ row.objects[0].height }}</td>
         <td>{{ row.objects[0].field_position }}</td>
         <td>{{ row.objects[0].distance_travelled }}</td>
     </tr>

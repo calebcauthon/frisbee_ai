@@ -79,6 +79,8 @@ def get_labels(detections, deps):
         in detections
     ]
 
+    return labels
+
     # Blacklist of names
     blacklist_names = ["opp", "ref", "bys"]
 
@@ -108,7 +110,7 @@ def get_labels(detections, deps):
     return filtered_labels, detections
 
 def annotate(frame, detections, deps):
-  labels, detections = get_labels(detections, deps)
+  labels = get_labels(detections, deps)
   
   annotated_frame = deps["box_annotator"].annotate(
       scene=frame.copy(), detections=detections, labels=labels

@@ -26,7 +26,8 @@ def split_tracker_id():
 @app.route('/frame_stats/<filename>.mp4', methods=['GET'])
 def get_frame_stats(filename):
     frame_number = request.args.get('frame', default=1, type=int)
-    annotation_data = logging.get_annotation_data(filename)
+    annotation_filename = f'{filename}_annotation_data.json'
+    annotation_data = logging.get_annotation_data(annotation_filename)
     frame_data = next((frame for frame in annotation_data['frames'] if frame['frame_number'] == frame_number), None)
     return render_template('frame_stats.html', frame=frame_data)
 
@@ -59,7 +60,8 @@ def get_stats(filename):
 @app.route('/player_stats/<filename>.mp4', methods=['GET'])
 def get_player_stats(filename):
     player = request.args.get('player')
-    annotation_data = logging.get_annotation_data(filename)
+    annotation_filename = f'{filename}_annotation_data.json'
+    annotation_data = logging.get_annotation_data(annotation_filename)
     player_frames = stats.get_frames_with_distance_travelled(player, stats.exclude_other_players(player, stats.get_player_frames(player, annotation_data)))
     return render_template('player_stats.html', frames=player_frames, player=player)
 
