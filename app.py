@@ -5,6 +5,7 @@ from json_tricks import loads, dumps
 from library import logging, stats, drawing
 from web_ui.routes.gif import gif_route
 from web_ui.routes.annotations import annotations_route
+from web_ui.routes.annotate_video import annotate_video_route
 from types import SimpleNamespace
 
 app = Flask(__name__, static_folder='web_ui/static', template_folder='web_ui/templates')
@@ -185,28 +186,14 @@ def get_videos():
 
 @app.route('/api/annotate', methods=['POST'])
 def annotate_video():
-    data = request.get_json()
-    source_video_path = data.get('source_video_path')
-    source_video_path = source_video_path.split('static', 1)[-1]
-    if source_video_path.startswith('//'):
-        source_video_path = source_video_path[1:]
-
-    frame_limit = data.get('frame_limit')
-    if frame_limit is not None:
-        frame_limit_flag = f"--frame_limit {frame_limit}"
-    else:
-        frame_limit_flag = ""
-
-    source_filename = os.path.basename(source_video_path)
-    source_filename = os.path.splitext(source_filename)[0]
-    print(f"source_filename: {source_filename} from source_video_path: {source_video_path}")
-
-    target_video_path = f'web_ui/static/video_targets/{source_filename}_annotated.mp4'
-    command = f"poetry shell && python process_video.py --source_video_path web_ui/static/{source_video_path} --target_video_path {target_video_path} {frame_limit_flag}"
-    print(f"Running command: {command}")
-    import subprocess
-    subprocess.Popen(command, shell=True)
-    return {"message": "Video processing started"}, 200
+    return annotate_video_route(SimpleNamespace(
+        os=os,
+        subprocess=subprocess,
+        flask=flask,
+        drawing=drawing,
+        logging=logging,
+        stats=stats
+    ))
 
 if __name__ == '__main__':
     app.run(debug=True)
