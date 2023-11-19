@@ -26,6 +26,19 @@
                 <video id="videoPlayer" class="w-full h-full" controls></video>
             </div>
             <button id="annotateBtn" class="bg-green-500 text-white px-4 py-2 mt-4 self-start hover:bg-green-600 transition-colors">Annotate</button>
+            <label>Frame Limit: 
+                <input id="frame_limit" type="checkbox">
+                <input id="frame_limit_value" type="number" min="1">
+            </label>
+            <label>Select Annotation File: 
+                <input id="annotation_file_checkbox" type="checkbox">
+                <select id="annotation_files_dropdown">
+                    {% for file in annotation_files %}
+                        <option value="{{ file }}">{{ file }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
 
             <!-- Detected Objects Container -->
             <div class="mt-4" id="detections-table">
@@ -162,13 +175,30 @@
 
             // Send video path to the backend server for annotation
             annotateBtn.addEventListener('click', () => {
+                const frameLimitCheckbox = document.getElementById('frame_limit');
+                const frameLimitValue = document.getElementById('frame_limit_value');
+                let frameLimit = null;
+                if (frameLimitCheckbox.checked) {
+                    frameLimit = frameLimitValue.value;
+                }
+
+                const annotationFileCheckbox = document.getElementById('annotation_file_checkbox');
+                let annotationFile = null;
+                if (annotationFileCheckbox.checked) {
+                    annotationFile = document.getElementById('annotation_files_dropdown').value;
+                }
+
                 const videoPath = videoPlayer.src;
                 fetch('/api/annotate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ path: videoPath }),
+                    body: JSON.stringify({
+                        frame_limit: frameLimit,
+                        source_video_path: videoPath,
+                        annotation_file: annotationFile
+                    }),
                 })
                 .then(response => response.json())
                 .then(data => {
