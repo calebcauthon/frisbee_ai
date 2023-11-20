@@ -18,6 +18,7 @@ notebook = "^7.0.6"
 ipython = "^8.17.2"
 flask = "^3.0.0"
 json-tricks = "^3.17.3"
+mock = "^5.1.0"
 
 
 [build-system]
