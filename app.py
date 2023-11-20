@@ -54,9 +54,10 @@ def get_player_movie(filename, player):
     
 @app.route('/stats/<filename>.mp4', methods=['GET'])
 def get_stats(filename):
-    annotation_data = logging.get_annotation_data(filename)
+    annotation_filename = f'{filename}_annotation_data.json'
+    annotation_data = logging.get_annotation_data(annotation_filename)
     game_data = stats.get_stats(annotation_data)
-    return render_template('stats.html', game_data=game_data)
+    return render_template('stats.html', game_data=game_data, filename=filename)
 
 @app.route('/player_stats/<filename>.mp4', methods=['GET'])
 def get_player_stats(filename):
@@ -149,7 +150,8 @@ def crop_image(filename):
 def get_annotations(filename):
     dependencies = SimpleNamespace(
         logging=logging,
-        flask=flask
+        flask=flask,
+        stats=stats
     )
     return annotations_route(dependencies, filename)
 
@@ -161,7 +163,9 @@ def tail():
 
 @app.route('/home')
 def home():
-    return render_template('home.html')
+    annotation_dir = os.path.join(os.path.dirname(__file__), 'web_ui', 'static', 'annotation_data')
+    annotation_files = [f for f in os.listdir(annotation_dir) if f.endswith('.json')]
+    return render_template('home.html', annotation_files=annotation_files)
 
 @app.route('/api/videos/')
 def get_videos():

@@ -16,7 +16,9 @@ def get_annotation_data(filename):
     return obj
 
 def add_tracker_name(new_name, video_path):
-    annotation_data = read_detection_data_from_file(video_path)
+    filename = os.path.splitext(os.path.basename(video_path))[0]
+    annotation_filename = f"{filename}_annotation_data.json"
+    annotation_data = get_annotation_data(annotation_filename)
     tracker.add_tracker_name(new_name, annotation_data["tracker_names"]) 
     write_annotation_data_to_file(video_path, annotation_data)
 
