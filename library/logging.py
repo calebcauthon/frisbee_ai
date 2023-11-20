@@ -120,7 +120,9 @@ def split_tracker_id(tracker_id, frame_number, video_path):
     write_annotation_data_to_file(video_path, annotation_data)
 
 def remove_player(name, video_path):
-    annotation_data = read_detection_data_from_file(video_path)
+    video_filename = os.path.splitext(os.path.basename(video_path))[0]
+    annotation_filename = f"{video_filename}_annotation_data.json"
+    annotation_data = get_annotation_data(annotation_filename)
     tracker.remove_tracker_name(name, annotation_data["tracker_names"], annotation_data["frames"])
     update_tracker_names_based_on_tracker_map(annotation_data["frames"], annotation_data["tracker_names"])
     write_annotation_data_to_file(video_path, annotation_data)
