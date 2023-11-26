@@ -64,7 +64,7 @@ def process_video(
         log(deps, f"Deleted existing file at {target_video_path}")
         os.remove(target_video_path)
     
-    video_info.width += 1200
+    #video_info.width += 1200
     blank_image = np.zeros((video_info.height, video_info.width, 3), np.uint8)
 
     print("\033[33m" + f"Loaded video {source_video_path} with {video_info.total_frames} frames" + "\033[0m")
@@ -100,17 +100,17 @@ def save_detections(frame, frame_number, detections, projections, inference, dep
     for index, entry in enumerate(detections.xyxy):
         prediction = inference["predictions"][index]
         objects.append({
-            "field_position": projections[index],
+            #"field_position": projections[index],
             "confidence": detections.confidence[index],
             "class_id": detections.class_id[index],
-            "tracker_id": detections.tracker_id[index],
-            "tracker_name": get_name(deps, detections.tracker_id[index]),
             "xyxy": detections.xyxy[index].tolist(),
             "class": prediction["class"],
             "width": int(prediction["width"]),
             "height": int(prediction["height"]),
         })
-
+        if detections.tracker_id and detections.tracker_id[index]:
+            objects[-1]["tracker_id"] = detections.tracker_id[index]
+            objects[-1]["tracker_name"] = get_name(deps, detections.tracker_id[index])
 
     detection_map = {
         "frame": frame,
@@ -127,8 +127,12 @@ def process_one_frame(index, frame, deps):
     detections = None
     if (deps["params"]["use_predictions_from_annotations_file"] is None):
         roboflow_result = predict_frame(frame, deps)
+        print(f"Roboflow result: {roboflow_result}")
         detections = sv.Detections.from_roboflow(roboflow_result)
-        detections = tracker.update_with_detections(detections)
+        print(f"Before sv processing, detections: {detections}")
+        #detections = tracker.update_with_detections(detections)
+        print(f"After sv processing, detections: {detections}")
+        print("---")
     else:
         if "existing_annotation_data" not in deps:
             annotation_full_path = deps["params"]["use_predictions_from_annotations_file"]
@@ -175,21 +179,21 @@ def process_one_frame(index, frame, deps):
     
 
     frame = annotate(frame, detections, deps)
-    draw_field(frame, deps)
+    #draw_field(frame, deps)
 
-    draw_video_homography_points(frame, deps)
-    draw_projection_homography_points(frame, deps)
+    #draw_video_homography_points(frame, deps)
+    #draw_projection_homography_points(frame, deps)
     
-    draw_video_scoring_line(frame, deps)
-    draw_projection_scoring_line(frame, deps)
+    #draw_video_scoring_line(frame, deps)
+    #draw_projection_scoring_line(frame, deps)
     
-    projections = []
-    for bbox, _, confidence, class_id, tracker_id in detections:
-      projection = get_player_projection(bbox, deps)
-      draw_player_projection(projection, frame, deps)
-      projections.append(projection)
+#    projections = []
+#    for bbox, _, confidence, class_id, tracker_id in detections:
+#      projection = get_player_projection(bbox, deps)
+#      draw_player_projection(projection, frame, deps)
+#      projections.append(projection)
 
-    save_detections(frame, index, detections, projections, roboflow_result, deps)
+    save_detections(frame, index, detections, [], roboflow_result, deps)
     sink.write_frame(frame=frame)
 
 

@@ -75,7 +75,10 @@ def get_labels(detections, deps):
 
     labels = []
     for bbox, _, confidence, class_id, tracker_id in detections:
-        name = get_name(deps, tracker_id)
+        if (tracker_id is None):
+            name = "na" 
+        else:
+            name = get_name(deps, tracker_id)
         total_distance_so_far = 0
         for frame in existing_data.get('frames', []):
             if (frame['frame_number'] < current_frame_number):
@@ -83,7 +86,8 @@ def get_labels(detections, deps):
                     if obj['tracker_name'] == name:
                         total_distance_so_far += obj.get('distance_travelled', 0)
         distance_rounded = round(total_distance_so_far)
-        labels.append(f"{name} {distance_rounded}ft")
+        confidence_percent = round(confidence * 100)
+        labels.append(f"{name} {confidence_percent}%")
 
     return labels
 
