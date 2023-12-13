@@ -39,12 +39,14 @@ def move_tracking_id_to_another_name(old_tracker_id, new_name, video_path):
     write_annotation_data_to_file(video_path, annotation_data)
 
 def change_tracker_name(old_name, new_name, video_path):
-    annotation_data = read_detection_data_from_file(video_path)
+    video_filename = os.path.splitext(os.path.basename(video_path))[0]
+    annotation_filename = f"{video_filename}_annotation_data.json"
+    annotation_data = get_annotation_data(annotation_filename)
     tracker.change_name(old_name, new_name, annotation_data["tracker_names"])
     update_tracker_names_based_on_tracker_map(annotation_data["frames"], annotation_data["tracker_names"])
     write_annotation_data_to_file(video_path, annotation_data)
 
-def write_detection_data_to_file(deps, detections):
+def write_detection_data_to_file(deps, detections, db):
     frames = [{
       "objects": detection['objects'],
       "frame_number": detection['frame_number']
@@ -57,6 +59,12 @@ def write_detection_data_to_file(deps, detections):
       "source_filename": os.path.basename(deps["source_video_path"]),
       "tracker_names": deps["tracker_names"]
     }
+
+    db.add_video_details({
+        "tracker_names": deps["tracker_names"],
+        "source_path": deps["source_video_path"],
+        "source_filename": os.path.basename(deps["source_video_path"]),
+    })
 
     write_annotation_data_to_file(deps["target_video_path"], annotation_data)
 

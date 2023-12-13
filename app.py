@@ -7,6 +7,7 @@ from web_ui.routes.gif import gif_route
 from web_ui.routes.annotations import annotations_route
 from web_ui.routes.annotate_video import annotate_video_route
 from types import SimpleNamespace
+from db.utils import VideoDB
 
 app = Flask(__name__, static_folder='web_ui/static', template_folder='web_ui/templates')
 

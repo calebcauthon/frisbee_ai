@@ -1,3 +1,4 @@
+import neptune
 import argparse
 from tqdm import tqdm
 from library.detection import predict_frame
@@ -7,6 +8,7 @@ from library import homography
 from library.logging import *
 from library import logging
 from library import stats
+from db.utils import VideoDB
 import os
 import supervision as sv
 import pprint
@@ -33,6 +35,10 @@ def process_video(
     frame_limit: int = None,
     use_predictions_from_annotations_file: str = None
 ) -> None:
+    run = neptune.init_run(
+        project="playbook/routefinder", 
+        tags=["video-processing"]
+    )
     tracker, box_annotator, label_annotator, frame_generator, video_info = initialize_video_processing(source_video_path)
     _t, _, _l, _f, video_info2 = initialize_video_processing(source_video_path)
     global deps
@@ -53,6 +59,10 @@ def process_video(
        "frame_limit": frame_limit,
        "use_predictions_from_annotations_file": use_predictions_from_annotations_file
     }
+    run["video_info"] = str(video_info)
+    deps["run"] = run
+    db = VideoDB(db_name="postgres", user="web", password="web")
+    db.start_db_entry("TEST-1")
 
     clearLogs()
     log(deps, "Redrawing video...")
@@ -85,10 +95,13 @@ def process_video(
             }
             deps["status"]["frame_data"] = frame_data
             deps["status"]["current_frame"] = frame_data
-            process_one_frame(index, blank_image, deps)
+            detection_map = process_one_frame(index, blank_image, deps) 
+            print(f"Frame {index} has {len(detection_map['objects'])} objects")
+            print(f"Value of detection_map: {detection_map}")
+            db.write_detections(detection_map, index)
 
     logReplace(deps, "PROGRESS", "PROGRESS: " + tqdm.format_meter(video_info.total_frames, video_info.total_frames, 0, 0))
-    logging.write_detection_data_to_file(deps, deps["detections"])
+    logging.write_detection_data_to_file(deps, deps["detections"], db)
     log(deps, "Wrote detection data to file")
     log(deps, "COMPLETED")
     
@@ -100,7 +113,7 @@ def save_detections(frame, frame_number, detections, projections, inference, dep
     for index, entry in enumerate(detections.xyxy):
         prediction = inference["predictions"][index]
         objects.append({
-            #"field_position": projections[index],
+            "field_position": projections[index],
             "confidence": detections.confidence[index],
             "class_id": detections.class_id[index],
             "xyxy": detections.xyxy[index].tolist(),
@@ -108,17 +121,18 @@ def save_detections(frame, frame_number, detections, projections, inference, dep
             "width": int(prediction["width"]),
             "height": int(prediction["height"]),
         })
-        if detections.tracker_id and detections.tracker_id[index]:
+        if len(detections.tracker_id) > 0 and detections.tracker_id[index]:
             objects[-1]["tracker_id"] = detections.tracker_id[index]
             objects[-1]["tracker_name"] = get_name(deps, detections.tracker_id[index])
 
     detection_map = {
-        "frame": frame,
+        #"frame": frame,
         "frame_number": frame_number,
         "detections": detections,
         "objects": objects
     }
-    deps["detections"].append(detection_map)
+    deps["detections"].append(detection_map) 
+    return detection_map
             
 def process_one_frame(index, frame, deps):
     sink = deps["sink"]
@@ -127,12 +141,8 @@ def process_one_frame(index, frame, deps):
     detections = None
     if (deps["params"]["use_predictions_from_annotations_file"] is None):
         roboflow_result = predict_frame(frame, deps)
-        print(f"Roboflow result: {roboflow_result}")
         detections = sv.Detections.from_roboflow(roboflow_result)
-        print(f"Before sv processing, detections: {detections}")
-        #detections = tracker.update_with_detections(detections)
-        print(f"After sv processing, detections: {detections}")
-        print("---")
+        detections = tracker.update_with_detections(detections)
     else:
         if "existing_annotation_data" not in deps:
             annotation_full_path = deps["params"]["use_predictions_from_annotations_file"]
@@ -187,15 +197,15 @@ def process_one_frame(index, frame, deps):
     #draw_video_scoring_line(frame, deps)
     #draw_projection_scoring_line(frame, deps)
     
-#    projections = []
-#    for bbox, _, confidence, class_id, tracker_id in detections:
-#      projection = get_player_projection(bbox, deps)
-#      draw_player_projection(projection, frame, deps)
-#      projections.append(projection)
+    projections = []
+    for bbox, _, confidence, class_id, tracker_id in detections:
+      projection = get_player_projection(bbox, deps)
+      projections.append(projection)
 
-    save_detections(frame, index, detections, [], roboflow_result, deps)
-    sink.write_frame(frame=frame)
+    detection_map_for_this_frame = save_detections(frame, index, detections, projections, roboflow_result, deps)
+    #sink.write_frame(frame=frame)
 
+    return detection_map_for_this_frame
 
 def get_player_projection(bbox, deps):
     new_image_point = (int((bbox[0] + bbox[2]) / 2), int(bbox[3]))
